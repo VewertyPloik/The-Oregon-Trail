@@ -398,7 +398,7 @@
 
 <button id="zoom-toggle" onclick="toggleZoom()">
     <div class="zoom-icon"></div>
-    <span id="zoom-text">ZOOM IN</span>
+    <span id="zoom-text">+</span>
 </button>
 
 <script>
@@ -409,10 +409,10 @@
         const container = document.getElementById('game-container');
         if (isZoomedOut) {
             container.classList.add('zoomed-out');
-            document.getElementById('zoom-text').innerText = "ZOOM IN";
+            document.getElementById('zoom-text').innerText = "+";
         } else {
             container.classList.remove('zoomed-out');
-            document.getElementById('zoom-text').innerText = "ZOOM OUT";
+            document.getElementById('zoom-text').innerText = "-";
         }
     }
 
