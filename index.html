@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>The Oregon Trail</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=VT323&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #000000; --panel: #0000aa; --text: #ffffff;
+            --accent: #55ffff; --danger: #ff5555; --success: #55ff55;
+            --gold: #ffff55; --border: #aaaaaa;
+            --font-retro: 'VT323', monospace;
+            --font-modern: 'Inter', sans-serif;
+        }
+
+        body {
+            margin: 0; padding: 0; background-color: #111; color: var(--text);
+            font-family: var(--font-retro); display: flex; justify-content: center;
+            align-items: center; min-height: 100vh; touch-action: manipulation; user-select: none;
+            overflow: hidden; transition: background 0.3s;
+        }
+
+        /* CRT Overlay for Retro Mode */
+        body::after {
+            content: ""; display: block; position: absolute; top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 999; background-size: 100% 2px, 3px 100%; pointer-events: none;
+        }
+
+        /* ----- MODERN THEME OVERRIDES ----- */
+        body.modern-theme { font-family: var(--font-modern); background-color: #0f172a; }
+        body.modern-theme::after { display: none; /* Turn off CRT lines */ }
+        body.modern-theme #game-container { border-radius: 16px; border: 1px solid #334155; box-shadow: 0 20px 40px rgba(0,0,0,0.5); background-color: #020617; }
+        body.modern-theme header { border-radius: 16px 16px 0 0; background: #1e293b; color: #38bdf8; border-bottom: 1px solid #334155; text-shadow: none; font-family: var(--font-modern); letter-spacing: 2px;}
+        body.modern-theme .panel { background: #0f172a; }
+        body.modern-theme .btn-grid { background: #1e293b; border-top: 1px solid #334155; }
+        body.modern-theme button { 
+            font-family: var(--font-modern); font-weight: bold; border-radius: 8px; 
+            background-color: #334155; border: 1px solid #475569; box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
+            transition: all 0.2s ease; text-shadow: none; letter-spacing: 1px;
+        }
+        body.modern-theme button:hover:not(:disabled) { background-color: #475569; transform: translateY(-1px); box-shadow: 0 6px 8px rgba(0,0,0,0.15); }
+        body.modern-theme button:active:not(:disabled) { transform: translateY(2px); box-shadow: none; color: #38bdf8; }
+        body.modern-theme h1, body.modern-theme h2 { text-shadow: none; font-weight: 700; color: #38bdf8; }
+        body.modern-theme input[type="text"], body.modern-theme input[type="number"] { font-family: var(--font-modern); border-radius: 6px; background: #1e293b; border: 1px solid #475569; }
+        body.modern-theme .status-bar { background: #1e293b; border-bottom: 1px solid #334155; font-size: 14px; }
+        body.modern-theme #modal-content { border-radius: 12px; border: 1px solid #334155; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7); font-family: var(--font-modern); }
+        body.modern-theme .tombstone-container { font-family: var(--font-modern); border-radius: 16px 16px 0 0; background: linear-gradient(to bottom, #94a3b8, #64748b); border: none; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5); }
+        /* ---------------------------------- */
+
+        #game-container {
+            width: 100%; max-width: 500px; height: 100vh; max-height: 850px;
+            background-color: var(--bg); border: 4px solid var(--border);
+            display: flex; flex-direction: column; position: relative;
+        }
+
+        header { text-align: center; font-size: 24px; padding: 10px; background: var(--border); color: #000; text-transform: uppercase; font-weight: bold; border-bottom: 2px solid #555; }
+        .screen { display: none; flex-direction: column; height: 100%; overflow-y: hidden; }
+        .active-screen { display: flex; }
+        h1 { color: var(--accent); text-align: center; margin: 20px 0 10px 0; font-size: 40px; text-shadow: 3px 3px #000;}
+        h2 { color: var(--accent); text-align: center; margin: 10px 0; font-size: 26px; text-shadow: 2px 2px #000;}
+
+        .panel { padding: 15px; overflow-y: auto; flex-grow: 1; background: var(--bg); }
+        .input-row { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 20px; align-items: center; }
+        input[type="text"], input[type="number"] { font-family: var(--font-retro); font-size: 20px; background: #000; color: var(--gold); border: 2px solid var(--border); text-align: center; padding: 4px; }
+        input[type="text"] { width: 140px; text-transform: capitalize; }
+        input[type="number"] { width: 60px; }
+        
+        .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 10px; background: var(--panel); border-top: 2px solid var(--border); }
+        .btn-grid.single { grid-template-columns: 1fr; }
+        .btn-grid.triple { grid-template-columns: 1fr 1fr 1fr; }
+        
+        /* Smaller, better fitting buttons */
+        button { font-family: var(--font-retro); font-size: 18px; padding: 8px; background-color: #000; color: var(--text); border: 2px solid var(--border); text-transform: uppercase; cursor: pointer; box-shadow: inset -2px -2px 0 #555, inset 2px 2px 0 #fff; transition: opacity 0.2s; }
+        button:active:not(:disabled) { box-shadow: inset 2px 2px 0 #555; color: var(--accent); }
+        button:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; color: #888; border-color: #555; }
+        .menu-btn { font-size: 20px; padding: 10px; margin-bottom: 8px; width: 80%; margin-left: auto; margin-right: auto;}
+        .danger-btn { color: var(--danger); border-color: var(--danger); }
+        .toggle-btn { width: 80px; }
+
+        .status-bar { display: grid; grid-template-columns: 1fr 1fr; padding: 8px 10px; background: var(--panel); border-bottom: 2px solid var(--border); font-size: 18px; }
+        .val { color: var(--gold); }
+
+        /* Trail Viewport */
+        #viewport { height: 160px; background: linear-gradient(to bottom, #4facfe, #00f2fe); position: relative; border-bottom: 2px solid var(--border); overflow: hidden; flex-shrink: 0; }
+        .mountain-bg { position: absolute; bottom: 40px; left: 0; width: 200%; height: 60px; background: repeating-linear-gradient(45deg, #4a4e69 0%, #4a4e69 10%, #3b3f58 10%, #3b3f58 20%); clip-path: polygon(0% 100%, 10% 0%, 25% 100%, 40% 20%, 55% 100%, 75% 10%, 100% 100%); opacity: 0.5; }
+        .ground { position: absolute; bottom: 0; width: 200%; height: 45px; background: linear-gradient(to bottom, #8B4513, #5c2e0b); border-top: 2px solid #3e1f06; }
+        .sun { position: absolute; top: 15px; right: 30px; width: 35px; height: 35px; background: radial-gradient(circle, #fffacd, #ffd700); border-radius: 50%; box-shadow: 0 0 20px #ffd700, 0 0 40px #ff8c00; }
+        
+        #wagon-group { position: absolute; bottom: 35px; left: 10px; display: flex; align-items: flex-end; gap: 4px; animation: bounce 0.8s infinite alternate steps(2); }
+        .wagon { width: 50px; height: 35px; position: relative; }
+        .w-top { width: 50px; height: 20px; background: #eeeeee; border-top-left-radius: 15px; border-top-right-radius: 20px; border: 2px solid #aaa; border-bottom: none;}
+        .w-bot { width: 50px; height: 12px; background: #8B4513; border: 2px solid #3e1f06; }
+        .wheel { width: 14px; height: 14px; background: #b87333; border: 2px dashed #111; border-radius: 50%; position: absolute; bottom: -6px; animation: spin 1.5s infinite linear; }
+        .wheel.w-b { left: 4px; } .wheel.w-f { right: 4px; }
+        .yoke { width: 12px; height: 4px; background: #5c2e0b; margin-bottom: 10px; }
+        .ox { width: 26px; height: 16px; background: #553300; position: relative; border-radius: 4px; }
+        .ox::after { content:''; position: absolute; right: -6px; top: 2px; width: 10px; height: 10px; background: #553300; border-radius: 3px; }
+        .ox::before { content:''; position: absolute; right: -4px; top: -5px; width: 4px; height: 8px; background: #dddddd; }
+        
+        @keyframes bounce { 0% { transform: translateY(0); } 100% { transform: translateY(-3px); } }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        #log-wrapper { flex-grow: 1; background: #000; position: relative; overflow: hidden; }
+        #log { position: absolute; top: 0; left: 0; right: 0; bottom: 0; overflow-y: auto; padding: 10px; font-size: 18px; display: flex; flex-direction: column; gap: 6px; }
+        .log-entry { padding-left: 10px; border-left: 3px solid var(--border); background: rgba(255,255,255,0.05); padding: 5px 10px; }
+        .log-date { color: var(--accent); margin-right: 5px; font-weight: bold;}
+
+        /* Map Screen */
+        #map-container { background: #111; padding: 20px; }
+        .map-path { border-left: 4px dashed var(--accent); margin-left: 20px; padding-left: 25px; position: relative; }
+        .map-node { position: relative; margin-bottom: 30px; font-size: 20px; color: #aaa; }
+        .map-dot { position: absolute; left: -31px; top: 4px; width: 10px; height: 10px; background: #000; border: 3px solid #555; }
+        .node-passed { color: var(--success); }
+        .node-passed .map-dot { background: var(--success); border-color: var(--success); }
+        .node-next { color: var(--gold); font-size: 22px; text-shadow: 1px 1px #000; }
+        .node-next .map-dot { background: var(--gold); border-color: var(--gold); box-shadow: 0 0 8px var(--gold); }
+
+        /* Hunting Minigame */
+        #hunt-area { flex-grow: 1; background: linear-gradient(#4b8b3b, #2e5c20); position: relative; overflow: hidden; cursor: crosshair; }
+        .hunt-ground { position: absolute; bottom: 0; width: 100%; height: 60px; background: #1a4210; border-top: 2px dashed #000; }
+        #hunt-player { width: 20px; height: 30px; background: #0000aa; position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); border: 2px solid #fff; }
+        #hunt-player::after { content: ''; position: absolute; width: 4px; height: 20px; background: #333; top: -10px; left: 14px; border: 1px solid #000;}
+        #hunt-ui { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.8); padding: 5px 10px; border: 2px solid var(--border); font-size: 18px; z-index: 10; color: #fff;}
+        .animal { position: absolute; cursor: crosshair; z-index: 5; }
+        
+        .animal.deer { width: 18px; height: 12px; background: #a0522d; border-radius: 4px; animation: erratic 0.45s infinite alternate; }
+        .animal.bison { width: 35px; height: 22px; background: #3e1f06; border-radius: 8px 15px 0 0; }
+        .animal.bear { width: 28px; height: 18px; background: #111; border-radius: 10px; animation: bound 0.3s infinite alternate ease-in-out;}
+        .animal.eagle { width: 12px; height: 8px; background: #fff; border-radius: 50%; animation: fly 1.2s infinite alternate ease-in-out; }
+
+        @keyframes bound { from { transform: translateY(0); } to { transform: translateY(-10px); } }
+        @keyframes erratic { 0% { transform: translate(0, 0); } 50% { transform: translate(5px, -15px); } 100% { transform: translate(-5px, 0); } }
+        @keyframes fly { 0% { transform: translateY(-30px); } 100% { transform: translateY(30px); } }
+        
+        .bullet-flash { position: absolute; width: 15px; height: 15px; background: #fff; border: 3px solid var(--gold); border-radius: 50%; pointer-events: none; animation: flash 0.15s forwards; }
+        .screen-flash { position: absolute; top:0;left:0;right:0;bottom:0; background: #fff; opacity:0; pointer-events:none; z-index:99; animation: sflash 0.1s forwards; }
+        @keyframes flash { 100% { opacity: 0; transform: scale(5); } }
+        @keyframes sflash { 0% { opacity:0.3; } 100% { opacity:0; } }
+
+        /* Modals & CSS Art Landscapes */
+        #modal-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 50; display: flex; justify-content: center; align-items: center; padding: 15px; }
+        #modal-content { background: var(--panel); border: 4px solid var(--border); width: 100%; max-width: 380px; padding: 15px; box-shadow: 8px 8px 0 #000; text-align: center; max-height: 90vh; overflow-y: auto;}
+        #modal-image { width: 100%; height: 120px; background: #000; margin-bottom: 10px; border: 4px solid var(--border); position: relative; overflow: hidden; }
+        
+        .art-river { background: linear-gradient(to bottom, #87CEFA 30%, #4682B4 30%); }
+        .art-river::before { content:''; position:absolute; bottom:0; left:0; width:100%; height: 50%; background: repeating-linear-gradient(180deg, #1e3c72, #2a5298 10px, #1e3c72 20px); box-shadow: inset 0 5px 10px rgba(0,0,0,0.4); }
+        
+        .art-fort { background: linear-gradient(to bottom, #87CEEB 40%, #5c3a21 40%); }
+        .art-fort::before { 
+            content:''; position:absolute; bottom:10px; left:10%; width:80%; height:60px; 
+            background: repeating-linear-gradient(to right, #6b4226, #6b4226 10px, #4a2e1b 10px, #4a2e1b 12px); 
+            border: 4px solid #3e1f06; border-bottom: none; box-shadow: inset 0 15px 0 rgba(0,0,0,0.4); 
+        }
+        
+        .art-landmark { background: linear-gradient(to bottom, #ff7e5f 50%, #d4a373 50%); }
+        .art-landmark::before { content:''; position:absolute; bottom:0; left:20%; width:60%; height:90px; background: linear-gradient(to right, #8c5a45, #a06e57); clip-path: polygon(30% 0%, 70% 0%, 100% 100%, 0% 100%); }
+
+        #modal-desc { font-size: 20px; margin-bottom: 15px; line-height: 1.2; }
+        #modal-btns { display: flex; flex-direction: column; gap: 8px; }
+
+        .inv-table { width: 100%; font-size: 18px; text-align: left; border-collapse: collapse; margin-bottom: 15px; }
+        .inv-table th, .inv-table td { padding: 4px; border-bottom: 1px dashed #555; }
+        .inv-table th { color: var(--accent); }
+        .hidden { display: none !important; }
+
+        /* Tombstone Styling */
+        .tombstone-container {
+            width: 170px; height: 210px; background: #7a7a7a; border: 4px solid #444;
+            border-top-left-radius: 85px; border-top-right-radius: 85px;
+            margin: 0 auto 10px auto; display: flex; flex-direction: column;
+            align-items: center; padding: 20px 10px 10px 10px; box-shadow: inset -5px -5px 0 #555;
+            color: #111; text-shadow: none;
+        }
+        .ts-rip { font-size: 26px; font-weight: bold; margin-bottom: 5px; }
+        .ts-name { font-size: 20px; border-bottom: 2px solid #333; width: 90%; padding-bottom: 5px; margin-bottom: 10px;}
+        .ts-epitaph { font-size: 16px; word-wrap: break-word; text-align: center; width: 100%; line-height: 1;}
+        .ts-date-game { font-size: 14px; margin-top: auto; font-weight: bold; }
+        .ts-date-irl { font-size: 12px; color: #333; }
+        .ts-input { width: 95%; background: #ccc !important; color: #000 !important; border: 2px solid #333 !important; font-size: 16px !important; }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <header>The Oregon Trail</header>
+
+    <div id="screen-home" class="screen active-screen">
+        <h1>Oregon Trail</h1>
+        <h3 style="text-align:center; color:var(--border); margin-top:-10px;">v1.0</h3>
+        <div class="panel" style="display:flex; flex-direction:column; justify-content:center; gap:5px;">
+            <button class="menu-btn" onclick="openScreen('screen-names'); resetGameData();">Start Journey</button>
+            <button class="menu-btn" onclick="showLeaderboard()">Leaderboard</button>
+            <button class="menu-btn" onclick="openScreen('screen-global-settings')">Settings</button>
+            <button class="menu-btn" onclick="openScreen('screen-credits')">Credits</button>
+            <button class="menu-btn" onclick="openGravesList()">View Graves</button>
+            <button class="menu-btn danger-btn" onclick="confirmReset()">Reset Progress</button>
+        </div>
+    </div>
+
+    <div id="screen-global-settings" class="screen">
+        <h2>Game Settings</h2>
+        <div class="panel">
+            <div class="input-row">
+                <label>Sound Effects:</label>
+                <button class="toggle-btn" id="btn-toggle-sfx" onclick="toggleSFX()">ON</button>
+            </div>
+            <div class="input-row">
+                <label>Music (8-Bit):</label>
+                <button class="toggle-btn" id="btn-toggle-music" onclick="toggleMusic()">ON</button>
+            </div>
+            <hr style="border-color:#555; margin:20px 0;">
+            <div class="input-row">
+                <label>Modern Visuals:</label>
+                <button class="toggle-btn" id="btn-toggle-visuals" onclick="toggleVisuals()">OFF</button>
+            </div>
+            <p style="font-size:16px; color:var(--border); text-align:center; margin-top:5px;">
+                Toggle modern visuals to switch from the retro 90's aesthetic to a clean 2020's design.
+            </p>
+        </div>
+        <div class="btn-grid single"><button onclick="openScreen('screen-home')">Back to Menu</button></div>
+    </div>
+
+    <div id="screen-credits" class="screen">
+        <h2>Credits</h2>
+        <div class="panel" style="text-align:center; font-size:22px;">
+            <p style="color:var(--gold);">Made By</p>
+            <p>Vewerty Ploik</p>
+        </div>
+        <div class="btn-grid single"><button onclick="openScreen('screen-home')">Back to Menu</button></div>
+    </div>
+
+    <div id="screen-leaderboard" class="screen">
+        <h2>Hall of Fame</h2>
+        <div class="panel" style="padding: 10px;">
+            <div id="lb-content"></div>
+        </div>
+        <div class="btn-grid single"><button onclick="openScreen('screen-home')">Back to Menu</button></div>
+    </div>
+
+    <div id="screen-graves" class="screen">
+        <h2>Graveyard</h2>
+        <div class="panel" style="padding: 10px;">
+            <div id="graves-content"></div>
+        </div>
+        <div class="btn-grid single"><button onclick="openScreen('screen-home')">Back to Menu</button></div>
+    </div>
+
+    <div id="screen-names" class="screen">
+        <h2>Name Your Party</h2>
+        <div class="panel">
+            <div class="input-row"><label>Leader:</label><input type="text" id="n0" value="Person 1"></div>
+            <div class="input-row"><label>Member 2:</label><input type="text" id="n1" value="Person 2"></div>
+            <div class="input-row"><label>Member 3:</label><input type="text" id="n2" value="Person 3"></div>
+            <div class="input-row"><label>Member 4:</label><input type="text" id="n3" value="Person 4"></div>
+            <div class="input-row"><label>Member 5:</label><input type="text" id="n4" value="Person 5"></div>
+        </div>
+        <div class="btn-grid single"><button onclick="goToStore()">Next: Buy Supplies</button></div>
+    </div>
+
+    <div id="screen-setup" class="screen">
+        <h2>Matt's General Store</h2>
+        <div class="panel">
+            <p style="font-size: 20px;">Funds: <span class="val" id="store-funds">$800</span></p>
+            <div class="input-row"><span>Oxen ($40)</span><input type="number" id="buy-oxen" value="3" min="1" max="9"></div>
+            <div class="input-row"><span>Food ($0.20)</span><input type="number" id="buy-food" value="1000" min="0" step="100"></div>
+            <div class="input-row"><span>Clothes ($10)</span><input type="number" id="buy-clothes" value="5" min="0"></div>
+            <div class="input-row"><span>Ammo ($2)</span><input type="number" id="buy-ammo" value="30" min="0"></div>
+            <div class="input-row"><span>Parts ($10)</span><input type="number" id="buy-parts" value="3" min="0"></div>
+            <p id="store-total-display" style="color: var(--gold); text-align: right; font-size: 22px; border-top: 2px dashed #555; padding-top: 10px;">Total: $0</p>
+        </div>
+        <div class="btn-grid single"><button onclick="leaveStore()">Hit The Trail</button></div>
+    </div>
+
+    <div id="screen-trail" class="screen">
+        <div class="status-bar">
+            <div>Date: <span id="ui-date" class="val">Mar 1</span></div>
+            <div>Weather: <span id="ui-weather" class="val">Cool</span></div>
+            <div>Pace: <span id="ui-pace" class="val">Steady</span></div>
+            <div>Rations: <span id="ui-rations" class="val">Filling</span></div>
+            <div>Next: <span id="ui-next" class="val">102m</span></div>
+            <div>Miles: <span id="ui-dist" class="val">0</span></div>
+        </div>
+        
+        <div id="viewport">
+            <div class="mountain-bg"></div>
+            <div class="sun"></div>
+            <div class="ground" id="trail-ground"></div>
+            <div id="wagon-group">
+                <div class="wagon"><div class="w-top"></div><div class="w-bot"></div><div class="wheel w-b"></div><div class="wheel w-f"></div></div>
+                <div class="yoke"></div><div class="ox"></div><div class="ox"></div>
+            </div>
+        </div>
+
+        <div id="log-wrapper"><div id="log"></div></div>
+
+        <div class="btn-grid triple">
+            <button onclick="action('travel')">Travel</button>
+            <button id="btn-rest" onclick="promptRest()">Rest</button>
+            <button id="btn-hunt" onclick="startHunt()">Hunt</button>
+            <button onclick="openScreen('screen-inv'); updateInvUI();">Stats</button>
+            <button onclick="openScreen('screen-map'); updateMapUI();">Map</button>
+            <button onclick="openGameSettings()">Set</button>
+        </div>
+    </div>
+
+    <div id="screen-hunt" class="screen">
+        <div id="hunt-ui">Time: <span class="val" id="hunt-time">10</span> | Ammo: <span class="val" id="hunt-ammo">0</span> | Meat: <span class="val" id="hunt-meat">0</span></div>
+        <div id="hunt-area" onclick="shootHunt(event)">
+            <div class="hunt-ground"></div>
+            <div id="hunt-player"></div>
+        </div>
+        <div class="btn-grid single"><button onclick="endHunt()">Stop Hunting</button></div>
+    </div>
+
+    <div id="screen-inv" class="screen">
+        <h2>Supplies & Party</h2>
+        <div class="panel">
+            <table class="inv-table">
+                <tr><th>Item</th><th>Quantity</th></tr>
+                <tr><td>Money</td><td id="inv-money"></td></tr>
+                <tr><td>Oxen</td><td id="inv-oxen"></td></tr>
+                <tr><td>Food</td><td id="inv-food"></td></tr>
+                <tr><td>Clothing</td><td id="inv-clothes"></td></tr>
+                <tr><td>Bullets</td><td id="inv-ammo"></td></tr>
+                <tr><td>Wagon Parts</td><td id="inv-parts"></td></tr>
+            </table>
+            <h3 style="color:var(--accent);">Party Health</h3>
+            <table class="inv-table" id="inv-party"></table>
+        </div>
+        <div class="btn-grid single"><button onclick="openScreen('screen-trail')">Back to Trail</button></div>
+    </div>
+
+    <div id="screen-map" class="screen">
+        <h2>Trail Map</h2>
+        <div class="panel" id="map-container">
+            <div class="map-path" id="map-nodes"></div>
+        </div>
+        <div class="btn-grid single"><button onclick="openScreen('screen-trail')">Close Map</button></div>
+    </div>
+
+    <div id="modal-overlay" class="hidden">
+        <div id="modal-content">
+            <h2 id="modal-title" style="margin-bottom:10px;">Event</h2>
+            <div id="modal-image" class="hidden"></div>
+            <div id="modal-desc">Description</div>
+            <div id="modal-btns"></div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // --- SETTINGS AND AUDIO ENGINE ---
+    let appSettings = { sfx: true, music: true, visuals: false };
+    let audioCtx, musicInterval, isMusicPlaying = false;
+    let noteIdx = 0;
+    
+    // An old-school sounding progression
+    const melody = [
+        130.81, 196.00, 261.63, 196.00, // C3, G3, C4, G3
+        130.81, 196.00, 261.63, 196.00, 
+        146.83, 220.00, 293.66, 220.00, // D3, A3, D4, A3
+        130.81, 174.61, 261.63, 174.61  // C3, F3, C4, F3
+    ];
+
+    function initAudio() {
+        if (!audioCtx) {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            audioCtx = new AudioContext();
+        }
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
+
+    // Attach click listener to whole document to handle SFX and strict audio resumption
+    document.addEventListener('click', (e) => {
+        if (e.target.tagName === 'BUTTON') {
+            initAudio();
+            if (appSettings.sfx) playBeep();
+            if (appSettings.music && !isMusicPlaying) startMusic();
+        }
+    });
+
+    function playBeep() {
+        if (!audioCtx || !appSettings.sfx) return;
+        let osc = audioCtx.createOscillator();
+        let gain = audioCtx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(440, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.05);
+        
+        gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+        
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+    }
+
+    function startMusic() {
+        if (!audioCtx || !appSettings.music || isMusicPlaying) return;
+        isMusicPlaying = true;
+        musicInterval = setInterval(() => {
+            if (!appSettings.music) return clearInterval(musicInterval);
+            let osc = audioCtx.createOscillator();
+            let gain = audioCtx.createGain();
+            
+            osc.type = 'triangle'; // Retro Nintendo-style bass sound
+            osc.frequency.value = melody[noteIdx % melody.length];
+            
+            // Pluck envelope
+            gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+            gain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.15);
+            
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.25);
+            noteIdx++;
+        }, 250); // 250ms per note
+    }
+
+    function stopMusic() {
+        isMusicPlaying = false;
+        clearInterval(musicInterval);
+    }
+
+    function toggleSFX() {
+        appSettings.sfx = !appSettings.sfx;
+        document.getElementById('btn-toggle-sfx').innerText = appSettings.sfx ? "ON" : "OFF";
+    }
+
+    function toggleMusic() {
+        appSettings.music = !appSettings.music;
+        document.getElementById('btn-toggle-music').innerText = appSettings.music ? "ON" : "OFF";
+        if (appSettings.music) { initAudio(); startMusic(); } 
+        else { stopMusic(); }
+    }
+
+    function toggleVisuals() {
+        appSettings.visuals = !appSettings.visuals;
+        document.getElementById('btn-toggle-visuals').innerText = appSettings.visuals ? "ON" : "OFF";
+        if (appSettings.visuals) { document.body.classList.add('modern-theme'); } 
+        else { document.body.classList.remove('modern-theme'); }
+    }
+    // --- END SETTINGS ENGINE ---
+
+    const PACES = ["Steady", "Strenuous", "Grueling"];
+    const RATIONS = ["Filling", "Meager", "Bare Bones"];
+    const WEATHERS = ["Hot", "Warm", "Cool", "Cold", "Rainy", "Snowing"];
+    
+    const LANDMARKS = [
+        { name: "Kansas River", dist: 102, type: "river", art: "art-river" },
+        { name: "Fort Kearney", dist: 319, type: "fort", art: "art-fort" },
+        { name: "Chimney Rock", dist: 650, type: "landmark", art: "art-landmark" },
+        { name: "Fort Laramie", dist: 830, type: "fort", art: "art-fort" },
+        { name: "Independence Rock", dist: 1026, type: "landmark", art: "art-landmark" },
+        { name: "Snake River", dist: 1534, type: "river", art: "art-river" },
+        { name: "Fort Boise", dist: 1648, type: "fort", art: "art-fort" },
+        { name: "Willamette Valley", dist: 2000, type: "finish", art: "art-river" }
+    ];
+
+    let game = {};
+    window.currentSortedGraves = [];
+
+    // POPUP QUEUE SYSTEM
+    let modalQueue = [];
+    let isModalActive = false;
+
+    function showModal(title, text, buttons, imageClass = null) {
+        modalQueue.push({title, text, buttons, imageClass});
+        if (!isModalActive) renderNextModal();
+    }
+
+    function renderNextModal() {
+        if (modalQueue.length === 0) {
+            document.getElementById('modal-overlay').classList.add('hidden');
+            isModalActive = false;
+            if (document.getElementById('screen-trail').classList.contains('active-screen')) { updateTrailUI(); }
+            return;
+        }
+        
+        isModalActive = true;
+        let m = modalQueue[0];
+        
+        document.getElementById('modal-title').innerText = m.title;
+        document.getElementById('modal-desc').innerHTML = m.text;
+        
+        let imgDiv = document.getElementById('modal-image');
+        if (m.imageClass) { imgDiv.className = m.imageClass; } else { imgDiv.className = 'hidden'; }
+        
+        let btns = document.getElementById('modal-btns'); btns.innerHTML = '';
+        m.buttons.forEach(b => {
+            let btn = document.createElement('button'); btn.innerText = b.text;
+            btn.onclick = () => { 
+                b.action(); 
+                modalQueue.shift(); 
+                renderNextModal();  
+            };
+            btns.appendChild(btn);
+        });
+        document.getElementById('modal-overlay').classList.remove('hidden');
+    }
+
+    function resetGameData() {
+        game = {
+            money: 800, inv: { oxen: 0, food: 0, clothes: 0, ammo: 0, parts: 0 },
+            party: [], pace: 0, rations: 0, weather: 2, day: 0, distance: 0, nextLandmarkIdx: 0, groundPos: 0,
+            canHuntRest: true, seenGraves: [], eventWeights: Array(50).fill(1.0) 
+        };
+        document.getElementById('log').innerHTML = '';
+    }
+
+    function confirmReset() {
+        showModal("Reset Progress", "Delete all gravestones and leaderboard data? This cannot be undone.", [
+            { text: "Yes, Reset", action: () => {
+                localStorage.removeItem('ot_graves');
+                localStorage.removeItem('ot_leaderboard');
+                alert("Progress reset completely!");
+            }},
+            { text: "Cancel", action: () => {} }
+        ]);
+    }
+
+    function openGravesList() {
+        let graves = JSON.parse(localStorage.getItem('ot_graves') || '[]');
+        graves.sort((a, b) => new Date(b.dateGame) - new Date(a.dateGame));
+        window.currentSortedGraves = graves;
+
+        let html = '';
+        if (graves.length === 0) {
+            html = `<p style="text-align:center; padding: 20px;">The graveyard is empty. No one has perished yet!</p>`;
+        } else {
+            html = `<table class="inv-table">
+                <tr><th>Name</th><th>Date Passed</th><th>Distance</th><th>Action</th></tr>`;
+            graves.forEach((g, idx) => {
+                html += `<tr>
+                    <td>${g.name}</td>
+                    <td>${g.dateGame}</td>
+                    <td>${g.dist}m</td>
+                    <td><button style="font-size:14px; padding:4px 8px;" onclick="viewSingleGrave(${idx})">View</button></td>
+                </tr>`;
+            });
+            html += `</table>`;
+        }
+
+        document.getElementById('graves-content').innerHTML = html;
+        openScreen('screen-graves');
+    }
+
+    function viewSingleGrave(idx) {
+        let g = window.currentSortedGraves[idx];
+        let html = `
+            <div class="tombstone-container">
+                <div class="ts-rip">R.I.P.</div>
+                <div class="ts-name">${g.name}</div>
+                <div class="ts-epitaph">"${g.epitaph}"</div>
+                <div class="ts-date-game">Passed: ${g.dateGame}</div>
+                <div class="ts-date-irl">(IRL: ${g.dateIrl})</div>
+            </div>
+        `;
+        showModal("Gravestone", html, [{text: "Close", action: () => {}}]);
+    }
+
+    function goToStore() {
+        game.party = []; 
+        for(let i=0; i<5; i++) {
+            let name = document.getElementById(`n${i}`).value.trim() || `Person ${i+1}`;
+            game.party.push({ name: name, hp: 70, diseases: [], weakness: 0.7 + Math.random() * 0.6, dead: false });
+        }
+        openScreen('screen-setup');
+        calcStore(); 
+    }
+
+    const inputs = ['buy-oxen', 'buy-food', 'buy-clothes', 'buy-ammo', 'buy-parts'];
+    const prices = [40, 0.20, 10, 2, 10];
+    inputs.forEach(id => document.getElementById(id).addEventListener('input', calcStore));
+
+    function calcStore() {
+        let total = inputs.reduce((sum, id, i) => sum + (parseFloat(document.getElementById(id).value)||0) * prices[i], 0);
+        document.getElementById('store-total-display').innerText = `Total: $${Math.floor(total)}`;
+        document.getElementById('store-total-display').style.color = total > game.money ? "var(--danger)" : "var(--gold)";
+        return total;
+    }
+
+    function leaveStore() {
+        let total = calcStore();
+        if (total > game.money) return alert("Not enough funds!");
+        if ((parseInt(document.getElementById('buy-oxen').value)||0) < 1) return alert("You need at least 1 yoke of oxen.");
+        
+        game.money -= total;
+        game.inv.oxen = parseInt(document.getElementById('buy-oxen').value) || 0;
+        game.inv.food = parseInt(document.getElementById('buy-food').value) || 0;
+        game.inv.clothes = parseInt(document.getElementById('buy-clothes').value) || 0;
+        game.inv.ammo = (parseInt(document.getElementById('buy-ammo').value) || 0) * 20;
+        game.inv.parts = parseInt(document.getElementById('buy-parts').value) || 0;
+
+        logMsg("Departed Independence, MO.", "var(--success)");
+        openScreen('screen-trail'); updateTrailUI();
+    }
+
+    function action(type, daysToRest = 0) {
+        let alive = game.party.filter(p => p.hp > 0);
+        if (alive.length === 0) return endGame(false, "Your entire party has perished.");
+
+        if (type === 'travel') {
+            game.canHuntRest = true; 
+            let base = game.pace === 0 ? 12 : game.pace === 1 ? 18 : 24;
+            let actualDist = base + Math.floor(Math.random() * 6);
+            let nextMark = LANDMARKS[game.nextLandmarkIdx];
+            let oldDist = game.distance;
+
+            if (nextMark && game.distance + actualDist >= nextMark.dist) {
+                actualDist = nextMark.dist - game.distance;
+                game.distance += actualDist;
+                advanceTime(1, alive);
+                checkGraves(oldDist, game.distance);
+                return handleLandmark(nextMark);
+            } else {
+                game.distance += actualDist;
+                logMsg(`Traveled ${actualDist} miles.`);
+                checkGraves(oldDist, game.distance);
+                if (Math.random() < 0.45) { advanceTime(1, alive); return triggerRandomEvent(alive); }
+            }
+            animateWagon(actualDist);
+            advanceTime(1, alive);
+        } else if (type === 'rest') {
+            game.canHuntRest = false; 
+            advanceTime(daysToRest, alive, true);
+        }
+        updateTrailUI();
+    }
+
+    function checkGraves(oldD, newD) {
+        let allGraves = JSON.parse(localStorage.getItem('ot_graves') || '[]');
+        let passedGraves = allGraves.filter(g => g.dist > oldD && g.dist <= newD);
+
+        passedGraves.forEach(g => {
+            if (!game.seenGraves.includes(g.id)) {
+                game.seenGraves.push(g.id);
+                let html = `
+                    <p style="font-size: 18px;">You pass a lonely gravestone on the side of the trail...</p>
+                    <div class="tombstone-container">
+                        <div class="ts-rip">R.I.P.</div>
+                        <div class="ts-name">${g.name}</div>
+                        <div class="ts-epitaph">"${g.epitaph}"</div>
+                        <div class="ts-date-game">Passed: ${g.dateGame}</div>
+                        <div class="ts-date-irl">(IRL: ${g.dateIrl})</div>
+                    </div>
+                `;
+                showModal("A Grave", html, [{text: "Pay Respects", action: () => {
+                    logMsg(`Paid respects at the grave of ${g.name}.`, "#aaaaaa");
+                }}]);
+            }
+        });
+    }
+
+    function promptRest() {
+        showModal("Rest", `How many days would you like to rest? (Max 6)<br><br><input type="number" id="rest-days" value="3" min="1" max="6" style="width:100px;">`, [
+            { text: "Rest", action: () => {
+                let d = parseInt(document.getElementById('rest-days').value) || 1;
+                if(d > 6) d = 6; if(d < 1) d = 1;
+                action('rest', d);
+            }},
+            { text: "Cancel", action: () => {} }
+        ]);
+    }
+
+    function advanceTime(days, alive, isResting = false) {
+        let newlyDead = [];
+
+        for(let i=0; i<days; i++) {
+            game.day++;
+            let foodNeeded = alive.length * (game.rations === 0 ? 3 : game.rations === 1 ? 2 : 1);
+            if (game.inv.food >= foodNeeded) game.inv.food -= foodNeeded;
+            else { 
+                game.inv.food = 0; 
+                logMsg("The party is starving!", "var(--danger)"); 
+                alive.forEach(p => p.hp -= 20); 
+            }
+
+            let baseDmg = (game.pace === 1 ? 2 : game.pace === 2 ? 5 : 0);
+            if (game.rations === 1) baseDmg += 2; 
+            if (game.rations === 2) baseDmg += 5; 
+            if (game.rations === 0 && game.inv.food > 0) baseDmg -= 1; 
+
+            if (game.weather === 0 || game.weather === 5) baseDmg += 2; 
+            if (game.inv.clothes < alive.length && game.weather >= 3) baseDmg += 5; 
+            
+            game.party.forEach(p => { 
+                if(!p.dead) { 
+                    if(isResting) {
+                        let heal = Math.floor(Math.random() * 8) + 2;
+                        p.hp = Math.min(100, p.hp + heal);
+                    } else {
+                        let dmg = baseDmg * p.weakness;
+                        p.hp -= dmg; 
+                        if(p.diseases.length > 0) p.hp -= (8 * p.weakness); 
+                    }
+                    if(p.hp <= 0) { 
+                        p.hp = 0; p.dead = true; 
+                        newlyDead.push(p.name);
+                        logMsg(`${p.name} has died.`, "var(--danger)"); 
+                    } 
+                }
+            });
+            
+            if(isResting && i===days-1) logMsg(`Rested for ${days} days.`, "var(--success)");
+            if(Math.random() < 0.25) game.weather = Math.floor(Math.random() * WEATHERS.length);
+        }
+
+        if(newlyDead.length > 0) {
+            let currentDate = new Date(1848, 2, 1); currentDate.setDate(currentDate.getDate() + game.day);
+            let inGameDateStr = currentDate.toLocaleDateString('en-US', {month:'long', day:'numeric', year:'numeric'});
+            let irlDateStr = new Date().toLocaleDateString('en-US');
+
+            newlyDead.forEach(name => {
+                let html = `
+                    <p style="color:var(--danger); font-size: 20px;">The trail has claimed ${name}.</p>
+                    <div class="tombstone-container">
+                        <div class="ts-rip">R.I.P.</div>
+                        <div class="ts-name">${name}</div>
+                        <input type="text" id="grave-input" class="ts-input" maxlength="50" placeholder="Write epitaph...">
+                        <div class="ts-date-game" style="margin-top:10px;">Passed: ${inGameDateStr}</div>
+                        <div class="ts-date-irl">(IRL: ${irlDateStr})</div>
+                    </div>
+                `;
+                showModal("Tragic Loss", html, [{text: "Erect Tombstone", action: () => {
+                    let ep = document.getElementById('grave-input').value.trim();
+                    if(!ep) ep = "Rest in peace.";
+                    
+                    let graves = JSON.parse(localStorage.getItem('ot_graves') || '[]');
+                    graves.push({ id: Date.now() + Math.random(), name: name, epitaph: ep, dist: game.distance, dateIrl: irlDateStr, dateGame: inGameDateStr });
+                    localStorage.setItem('ot_graves', JSON.stringify(graves));
+                    logMsg(`Erected tombstone for ${name}.`);
+                }}]);
+            });
+        }
+    }
+
+    function openGameSettings() {
+        let html = `<div style="text-align:left; background:rgba(0,0,0,0.5); padding:10px; border:2px solid var(--border); margin-bottom:10px; border-radius:4px;">
+            <h3 style="color:var(--gold); margin:0 0 5px 0;">Pace</h3>
+            <label><input type="radio" name="set-pace" value="0" ${game.pace===0?'checked':''}> Steady</label><br>
+            <label><input type="radio" name="set-pace" value="1" ${game.pace===1?'checked':''}> Strenuous</label><br>
+            <label><input type="radio" name="set-pace" value="2" ${game.pace===2?'checked':''}> Grueling</label>
+        </div>
+        <div style="text-align:left; background:rgba(0,0,0,0.5); padding:10px; border:2px solid var(--border); border-radius:4px;">
+            <h3 style="color:var(--gold); margin:0 0 5px 0;">Rations</h3>
+            <label><input type="radio" name="set-rat" value="0" ${game.rations===0?'checked':''}> Filling</label><br>
+            <label><input type="radio" name="set-rat" value="1" ${game.rations===1?'checked':''}> Meager</label><br>
+            <label><input type="radio" name="set-rat" value="2" ${game.rations===2?'checked':''}> Bare Bones</label>
+            <p style="font-size:14px; color:var(--danger); margin-top:5px;">Warning: Less rations drops health faster!</p>
+        </div>`;
+        showModal("In-Game Settings", html, [{text: "Save", action: () => {
+            game.pace = parseInt(document.querySelector('input[name="set-pace"]:checked').value);
+            game.rations = parseInt(document.querySelector('input[name="set-rat"]:checked').value);
+            logMsg("Settings updated.");
+        }}]);
+    }
+
+    function handleLandmark(lm) {
+        logMsg(`Arrived at ${lm.name}.`, "var(--accent)");
+        game.nextLandmarkIdx++;
+        if (lm.type === 'finish') return calculateScore();
+        
+        if (lm.type === 'river') {
+            showModal(lm.name, "A wide river blocks your path. How will you cross?", [
+                { text: "Ford River", action: () => riverOutcome(0.6) },
+                { text: "Caulk Wagon", action: () => riverOutcome(0.8) },
+                { text: "Hire Ferry ($50)", action: () => { 
+                    if(game.money >= 50) { game.money-=50; logMsg("Paid ferry. Safe crossing.", "var(--success)"); } 
+                    else { logMsg("Not enough money for ferry. Fording."); riverOutcome(0.6); }
+                }}
+            ], lm.art);
+        } else {
+            showModal(lm.name, "A well-known stop on the trail.", [
+                { text: "Rest here", action: () => promptRest() },
+                { text: "Continue", action: () => {} }
+            ], lm.art);
+        }
+    }
+
+    function riverOutcome(chance) {
+        if (Math.random() < chance) { logMsg(`Successfully crossed the river.`, "var(--success)"); } 
+        else {
+            let lost = Math.floor(Math.random() * 200) + 50;
+            game.inv.food = Math.max(0, game.inv.food - lost);
+            logMsg(`Wagon swamped! Lost ${lost} lbs of food.`, "var(--danger)");
+        }
+    }
+
+    function triggerRandomEvent(alive) {
+        let totalWeight = game.eventWeights.reduce((a, b) => a + b, 0);
+        let rand = Math.random() * totalWeight;
+        let r = 0, sum = 0;
+        for (let i = 0; i < 50; i++) { sum += game.eventWeights[i]; if (rand < sum) { r = i; break; } }
+        game.eventWeights[r] *= 0.5;
+
+        let victim = alive[Math.floor(Math.random()*alive.length)];
+
+        switch(r) {
+            case 0: let d = ["Dysentery", "Cholera", "Typhoid", "Measles"][Math.floor(Math.random()*4)]; victim.diseases.push(d); if (victim.hp > 40) victim.hp -= 20; else if (victim.hp > 15) victim.hp = 10; else victim.hp = 5; showModal("Disease", `${victim.name} contracted ${d}.`, [{text:"OK", action:()=>logMsg(`${victim.name} is sick.`, "var(--danger)")}]); break;
+            case 1: let p = ["wheel", "axle", "tongue"][Math.floor(Math.random()*3)]; if(game.inv.parts>0){ game.inv.parts--; showModal("Breakdown", `Wagon ${p} broke. Used spare.`, [{text:"OK", action:()=>logMsg(`Repaired ${p}.`)}]); } else { game.day+=3; showModal("Breakdown", `Wagon ${p} broke. Lost 3 days.`, [{text:"OK", action:()=>logMsg(`Lost 3 days.`, "var(--danger)")}]); } break;
+            case 2: let f = Math.floor(Math.random() * 80) + 20; game.inv.food += f; showModal("Discovery", `Found abandoned wagon. Scavenged ${f} lbs food!`, [{text:"Nice", action:()=>logMsg(`Found ${f} lbs food.`, "var(--success)")}]); break;
+            case 3: showModal("Thief", "A thief tries to steal food!", [{text:"Shoot (100 Ammo)", action:()=> { if(game.inv.ammo >= 100){ game.inv.ammo -= 100; logMsg("Scared thief.", "var(--success)"); } else { game.inv.food = Math.max(0,game.inv.food-100); logMsg("Thief took 100 food.", "var(--danger)"); } }}, {text:"Let him take it", action:()=> {game.inv.food = Math.max(0,game.inv.food-100); logMsg("Lost 100 food.", "var(--danger)");}}]); break;
+            case 4: game.day+=2; showModal("Lost", "Lost the trail. Wandered 2 days.", [{text:"Oh no", action:()=>logMsg("Lost 2 days.", "var(--danger)")}]); break;
+            case 5: showModal("Trade", "Emigrants offer 30 bullets for 1 set of clothes.", [{text:"Trade", action:()=> { if(game.inv.clothes>=1){game.inv.clothes--; game.inv.ammo+=30; logMsg("Traded.", "var(--success)");} else logMsg("Not enough clothes."); }}, {text:"Decline", action:()=>{}}]); break;
+            case 6: alive.forEach(x => x.hp-=15); showModal("Hail", "Severe hail damages the party.", [{text:"Cover", action:()=>logMsg("Hail storm injuries.", "var(--danger)")}]); break;
+            case 7: showModal("Snakebite", `${victim.name} was bitten by a rattlesnake!`, [{text:"Suck Venom", action:()=> { victim.hp-=25; logMsg(`${victim.name} hurt by bite.`, "var(--danger)"); }}, {text:"Amputate (Rest 3 days)", action:()=> { game.day+=3; victim.hp-=10; logMsg(`${victim.name} amputated. Survived.`, "var(--gold)"); }}]); break;
+            case 8: alive.forEach(x => x.hp-=20); showModal("Bad Water", "Water was tainted. Everyone is sick.", [{text:"Move On", action:()=>logMsg("Drank bad water.", "var(--danger)")}]); break;
+            case 9: showModal("Wildfire", "Prairie fire approaching!", [{text:"Flee (Lose 2 Days)", action:()=> {game.day+=2; logMsg("Fled fire.", "var(--gold)");}}, {text:"Drop Food (150 lbs)", action:()=> {game.inv.food=Math.max(0,game.inv.food-150); logMsg("Dropped food.", "var(--danger)");}}]); break;
+            case 10: game.day+=1; alive.forEach(x => x.hp-=5); showModal("Stampede", "Buffalo herd delays you 1 day.", [{text:"Wait", action:()=>logMsg("Delayed.", "var(--gold)")}]); break;
+            case 11: alive.forEach(x => x.hp-=10); showModal("Mosquitos", "Swarm of mosquitos plagues party.", [{text:"Swat", action:()=>logMsg("Bug bites.", "var(--gold)")}]); break;
+            case 12: game.inv.food+=50; alive.forEach(x => x.hp=Math.min(100,x.hp+10)); showModal("Wild Berries", "Found safe berries! HP restored.", [{text:"Eat", action:()=>logMsg("Ate berries.", "var(--success)")}]); break;
+            case 13: game.day+=1; showModal("Fog", "Thick fog forces stop for a day.", [{text:"Camp", action:()=>logMsg("Delayed by fog.", "var(--gold)")}]); break;
+            case 14: game.inv.parts = Math.max(0, game.inv.parts-1); showModal("Rough Trail", "Hit deep rut. Lost a wagon part.", [{text:"Ouch", action:()=>logMsg("Lost part.", "var(--danger)")}]); break;
+            case 15: showModal("Trapper", "Trapper offers 200 lbs food for $20.", [{text:"Buy", action:()=> {if(game.money>=20){game.money-=20; game.inv.food+=200; logMsg("Bought food.");} else logMsg("Too poor.");}}, {text:"Pass", action:()=>{}}]); break;
+            case 16: game.distance+=25; showModal("Shortcut", "Native guide shows faster route. +25 miles!", [{text:"Thanks", action:()=>logMsg("Shortcut taken.", "var(--success)")}]); break;
+            case 17: game.inv.clothes = Math.max(0, game.inv.clothes-2); showModal("Fire!", "Lantern tipped! Burned 2 clothes.", [{text:"Out", action:()=>logMsg("Fire.", "var(--danger)")}]); break;
+            case 18: alive.forEach(x => x.hp=Math.min(100,x.hp+15)); showModal("Good Spirits", "Sunset raises morale.", [{text:"Enjoy", action:()=>logMsg("Morale up.", "var(--success)")}]); break;
+            case 19: showModal("Toll Bridge", "Locals built bridge. Toll is $10.", [{text:"Pay", action:()=>{if(game.money>=10){game.money-=10;}else{game.day+=2;}}}, {text:"Around", action:()=>{game.day+=2;}}]); break;
+            case 20: game.inv.food+=30; victim.hp=Math.min(100,victim.hp+20); showModal("Wild Onions", `${victim.name} found wild onions!`, [{text:"Eat", action:()=>logMsg("Found onions.")}]); break;
+            case 21: game.day+=3; showModal("Flooded River", "Trail washed out. Wait 3 days.", [{text:"Wait", action:()=>logMsg("Waited out flood.")}]); break;
+            case 22: game.inv.oxen = Math.max(1, game.inv.oxen-1); showModal("Injured Ox", "An ox broke its leg and had to be put down.", [{text:"Sad", action:()=>logMsg("Lost an ox.", "var(--danger)")}]); break;
+            case 23: game.day+=2; showModal("Stuck in Mud", "Wagon sunk to the axles. Lost 2 days digging.", [{text:"Dig", action:()=>logMsg("Stuck in mud.")}]); break;
+            case 24: game.inv.food = Math.max(0, game.inv.food-80); showModal("Locusts!", "Locusts ate 80 lbs of your food.", [{text:"Shoo", action:()=>logMsg("Locusts ate food.", "var(--danger)")}]); break;
+            case 25: game.inv.oxen = Math.max(1, game.inv.oxen-1); alive.forEach(x=>x.hp-=10); showModal("Alkali Water", "Drank bad alkali water. Hurt party, ox died.", [{text:"Leave", action:()=>logMsg("Alkali poisoning.", "var(--danger)")}]); break;
+            case 26: game.day+=1; alive.forEach(x=>x.hp-=10); showModal("Dust Storm", "Choking dust storm. Lose 1 day.", [{text:"Cover", action:()=>logMsg("Dust storm.")}]); break;
+            case 27: game.inv.ammo+=40; game.inv.clothes++; showModal("Abandoned Cabin", "Found an old cabin with ammo and clothes.", [{text:"Loot", action:()=>logMsg("Found supplies.", "var(--success)")}]); break;
+            case 28: showModal("Native Trade", "Tribesmen offer 100 food for 1 set of clothes.", [{text:"Trade", action:()=>{if(game.inv.clothes>=1){game.inv.clothes--; game.inv.food+=100; logMsg("Traded.", "var(--success)");}else logMsg("No clothes.");}}, {text:"Decline", action:()=>{}}]); break;
+            case 29: alive.forEach(x=>x.hp=Math.min(100,x.hp+20)); showModal("Friendly Pioneer", "Met pioneer heading East. Morale +20.", [{text:"Listen", action:()=>logMsg("Good advice.")}]); break;
+            case 30: game.inv.food = Math.max(0, game.inv.food-50); game.inv.ammo = Math.max(0, game.inv.ammo-10); showModal("Bear Attack", "Bear raided camp! Lost 50 food and 10 bullets.", [{text:"Oh no", action:()=>logMsg("Bear attack.", "var(--danger)")}]); break;
+            case 31: victim.hp-=30; showModal("Broken Arm", `${victim.name} fell and broke an arm.`, [{text:"Set Bone", action:()=>logMsg(`${victim.name} broke arm.`, "var(--danger)")}]); break;
+            case 32: victim.hp-=25; showModal("Exhaustion", `${victim.name} is suffering from exhaustion.`, [{text:"Rest", action:()=>logMsg(`${victim.name} exhausted.`, "var(--danger)")}]); break;
+            case 33: if(game.weather<=1){ victim.hp-=30; showModal("Heatstroke", `${victim.name} got heatstroke.`, [{text:"Shade", action:()=>logMsg("Heatstroke.", "var(--danger)")}]); } break;
+            case 34: if(game.weather>=3){ victim.hp-=30; showModal("Frostbite", `${victim.name} got frostbite.`, [{text:"Warm Up", action:()=>logMsg("Frostbite.", "var(--danger)")}]); } break;
+            case 35: game.inv.clothes = Math.max(0, game.inv.clothes-1); showModal("Wear & Tear", "Rough travel ruined a set of clothing.", [{text:"Toss", action:()=>logMsg("Lost clothes.")}]); break;
+            case 36: game.day+=2; showModal("Wandering Oxen", "Oxen wandered off. Lost 2 days finding them.", [{text:"Search", action:()=>logMsg("Lost 2 days searching.")}]); break;
+            case 37: game.inv.ammo = Math.max(0, game.inv.ammo-5); victim.hp-=10; showModal("Gun Misfire", `Gun misfired, injuring ${victim.name}.`, [{text:"Careful", action:()=>logMsg("Gun misfire.", "var(--danger)")}]); break;
+            case 38: alive.forEach(x=>x.hp=Math.min(100,x.hp+30)); showModal("Fresh Spring", "Found clear spring water. Massively heals party.", [{text:"Drink", action:()=>logMsg("Drank spring water.", "var(--success)")}]); break;
+            case 39: showModal("Beautiful Waterfall", "The party admires a majestic waterfall.", [{text:"Admire", action:()=>logMsg("Admired nature.", "var(--success)")}]); break;
+            case 40: game.inv.food = Math.max(0, game.inv.food-60); game.inv.parts = Math.max(0, game.inv.parts-1); showModal("Wagon Tip", "Wagon tipped! Lost food and a spare part.", [{text:"Right it", action:()=>logMsg("Wagon tipped.", "var(--danger)")}]); break;
+            case 41: game.inv.parts = Math.max(0, game.inv.parts-1); showModal("Hail Damage", "Massive hail broke a wagon bow. Lost 1 spare part.", [{text:"Repair", action:()=>logMsg("Hail damage.")}]); break;
+            case 42: showModal("Famous Explorer", "Met John C. Frémont on the trail!", [{text:"Listen", action:()=>logMsg("Met explorer.")}]); break;
+            case 43: game.day+=2; showModal("Heavy Rain", "Torrential rain washes out the trail. Lost 2 days.", [{text:"Wait", action:()=>logMsg("Trail washed out.")}]); break;
+            case 44: game.money+=50; showModal("Gold!", "Spotted a gold nugget! +$50.", [{text:"Pocket it", action:()=>logMsg("Found gold!", "var(--success)")}]); break;
+            case 45: showModal("Stranded Traveler", "Traveler needs 1 spare part.", [{text:"Give Part", action:()=>{ if(game.inv.parts>0){ game.inv.parts--; game.money+=40; logMsg("Gave part for $40.");} else { logMsg("No parts to give."); }}}, {text:"Ignore", action:()=>logMsg("Ignored traveler.")}]); break;
+            case 46: showModal("Spoiled Food", "50 lbs of meat might be spoiled.", [{text:"Eat It", action:()=> { if(Math.random()<0.5) alive.forEach(x=>x.hp-=15); logMsg("Food made people sick.", "var(--danger)"); }}, {text:"Toss It", action:()=> { game.inv.food = Math.max(0, game.inv.food-50); logMsg("Tossed 50 lbs food."); }}]); break;
+            case 47: showModal("Desperate Trader", "Offers 1 yoke of oxen for $100.", [{text:"Buy ($100)", action:()=>{ if(game.money>=100){ game.money-=100; game.inv.oxen++; logMsg("Bought Ox.");} else { logMsg("Can't afford ox."); }}}, {text:"Decline", action:()=>{}}]); break;
+            case 48: showModal("River Rescue", `${victim.name} fell in river! Drop 20 bullets to pull them up faster?`, [{text:"Drop Ammo", action:()=>{ game.inv.ammo = Math.max(0, game.inv.ammo-20); logMsg("Saved them, lost ammo."); }}, {text:"Save Bullets", action:()=>{ victim.hp-=25; logMsg(`${victim.name} nearly drowned.`, "var(--danger)"); }}]); break;
+            case 49: showModal("Mysterious Berries", "Found strange berries. Eat?", [{text:"Risk it", action:()=>{ if(Math.random()<0.4) { game.inv.food+=40; logMsg("Berries were safe."); } else { victim.hp-=20; logMsg("Poison berries!", "var(--danger)"); }}}, {text:"Leave them", action:()=>{}}]); break;
+        }
+    }
+
+    let huntInterval, huntTime = 0, huntMeat = 0;
+    
+    function startHunt() {
+        if (game.inv.ammo <= 0) return showModal("No Ammo", "You don't have bullets.", [{text:"Back", action:()=>{}}]);
+        game.canHuntRest = false; 
+        openScreen('screen-hunt');
+        huntTime = 10; huntMeat = 0;
+        document.getElementById('hunt-area').innerHTML = '<div class="hunt-ground"></div><div id="hunt-player"></div>';
+        updateHuntUI();
+        
+        huntInterval = setInterval(() => {
+            huntTime--; updateHuntUI();
+            if(Math.random() < 0.85) spawnAnimal();
+            if(huntTime <= 0) endHunt();
+        }, 1000);
+    }
+
+    function spawnAnimal() {
+        if(huntTime <= 0) return;
+        let r = Math.random();
+        let type = r < 0.3 ? 'deer' : (r < 0.6 ? 'bison' : (r < 0.85 ? 'bear' : 'eagle'));
+        
+        let animal = document.createElement('div');
+        animal.className = `animal ${type}`;
+        let startLeft = Math.random() > 0.5;
+        
+        animal.style.top = type === 'eagle' ? Math.floor(Math.random()*40)+'px' : Math.floor(Math.random() * 60) + 10 + 'px';
+        animal.style.left = startLeft ? '-60px' : '100%';
+        
+        let speed = type === 'eagle' ? '1.2s' : (type === 'bear' ? '1.5s' : (type === 'deer' ? '2.25s' : '3s'));
+        animal.style.transition = `left ${speed} linear`;
+        
+        animal.onclick = (e) => {
+            e.stopPropagation();
+            if(game.inv.ammo > 0) {
+                game.inv.ammo--;
+                let yield = type === 'bear' ? 80 : (type === 'bison' ? 50 : (type === 'eagle' ? 15 : 25));
+                huntMeat += yield;
+                showFlash(e.clientX, e.clientY);
+                animal.remove(); updateHuntUI();
+            } else { endHunt(); }
+        };
+        
+        document.getElementById('hunt-area').appendChild(animal);
+        setTimeout(() => animal.style.left = startLeft ? '100%' : '-60px', 50);
+        setTimeout(() => { if(animal.parentElement) animal.remove(); }, 3500);
+    }
+
+    function shootHunt(e) {
+        if(huntTime > 0 && game.inv.ammo > 0) { game.inv.ammo--; showFlash(e.clientX, e.clientY); updateHuntUI(); }
+        if(game.inv.ammo <= 0) endHunt();
+    }
+
+    function showFlash(x, y) {
+        let f = document.createElement('div'); f.className = 'bullet-flash';
+        f.style.left = (x - 7) + 'px'; f.style.top = (y - 7) + 'px';
+        document.getElementById('screen-hunt').appendChild(f);
+        setTimeout(()=>f.remove(), 200);
+        let sf = document.createElement('div'); sf.className = 'screen-flash';
+        document.getElementById('screen-hunt').appendChild(sf);
+        setTimeout(()=>sf.remove(), 100);
+    }
+
+    function updateHuntUI() {
+        document.getElementById('hunt-time').innerText = huntTime;
+        document.getElementById('hunt-ammo').innerText = game.inv.ammo;
+        document.getElementById('hunt-meat').innerText = huntMeat;
+    }
+
+    function endHunt() {
+        clearInterval(huntInterval); huntTime = 0;
+        game.inv.food += huntMeat; game.day++; 
+        logMsg(`Hunting ended. Gathered ${huntMeat} lbs of food.`, "var(--success)");
+        openScreen('screen-trail'); updateTrailUI();
+    }
+
+    function calculateScore() {
+        let alive = game.party.filter(p => p.hp > 0);
+        let hpBonus = alive.reduce((sum, p) => sum + p.hp, 0);
+        let score = Math.floor((alive.length * 500) + game.money + (game.inv.food / 10) + (game.inv.oxen * 50) + (game.inv.parts * 20) + hpBonus);
+        
+        let dateArrived = new Date(1848, 2, 1); dateArrived.setDate(dateArrived.getDate() + game.day);
+        let record = {
+            score: score,
+            dateIrl: new Date().toLocaleDateString('en-US'),
+            dateArrived: dateArrived.toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}),
+            membersLeft: alive.length
+        };
+
+        let lb = JSON.parse(localStorage.getItem('ot_leaderboard') || '[]');
+        lb.push(record); lb.sort((a, b) => b.score - a.score); lb = lb.slice(0, 10);
+        localStorage.setItem('ot_leaderboard', JSON.stringify(lb));
+
+        let msg = `You made it safely to Oregon!<br><br>
+            <div style="text-align:left; font-size:18px;">
+            Survivors: ${alive.length} x 500<br>
+            Cash: $${Math.floor(game.money)}<br>
+            Food/Supplies Bonus: ${Math.floor(game.inv.food/10) + (game.inv.oxen*50) + (game.inv.parts*20)}<br>
+            Party Health Bonus: ${Math.floor(hpBonus)}<br>
+            <h3 style="color:var(--gold);text-align:center;">FINAL SCORE: ${score}</h3>
+            </div>`;
+        showModal("YOU WIN!", msg, [{ text: "Leaderboard", action: () => showLeaderboard() }, { text: "Main Menu", action: () => openScreen('screen-home') }]);
+    }
+
+    function showLeaderboard() {
+        let lb = JSON.parse(localStorage.getItem('ot_leaderboard') || '[]');
+        let html = `<table class="inv-table">
+            <tr><th>Rank</th><th>Score</th><th>Arrived</th><th>Party</th></tr>`;
+        if (lb.length === 0) {
+            html += `<tr><td colspan="4" style="text-align:center; padding: 20px;">No scores yet.</td></tr>`;
+        } else {
+            lb.forEach((r, idx) => {
+                let color = idx === 0 ? "var(--gold)" : (idx === 1 ? "silver" : (idx === 2 ? "#cd7f32" : "var(--text)"));
+                html += `<tr style="color:${color}"><td>#${idx + 1}</td><td>${r.score}</td><td>${r.dateArrived}</td><td>${r.membersLeft}/5</td></tr>`;
+            });
+        }
+        html += `</table>`;
+        document.getElementById('lb-content').innerHTML = html;
+        openScreen('screen-leaderboard');
+    }
+
+    function updateTrailUI() {
+        let date = new Date(1848, 2, 1); date.setDate(date.getDate() + game.day);
+        document.getElementById('ui-date').innerText = date.toLocaleDateString('en-US', {month:'short', day:'numeric'});
+        document.getElementById('ui-weather').innerText = WEATHERS[game.weather];
+        document.getElementById('ui-pace').innerText = PACES[game.pace];
+        document.getElementById('ui-rations').innerText = RATIONS[game.rations];
+        document.getElementById('ui-dist').innerText = game.distance;
+        let nextL = LANDMARKS[game.nextLandmarkIdx];
+        document.getElementById('ui-next').innerText = nextL ? (nextL.dist - game.distance) + "m" : "None";
+        document.getElementById('btn-hunt').disabled = !game.canHuntRest;
+        document.getElementById('btn-rest').disabled = !game.canHuntRest;
+    }
+
+    function getHealthData(hp) {
+        if (hp > 85) return { text: "Extremely Good", col: "#00ff00" };
+        if (hp > 70) return { text: "Very Good", col: "#55ff55" };
+        if (hp > 55) return { text: "Good", col: "#aaffaa" };
+        if (hp > 40) return { text: "Fair", col: "#ffff55" };
+        if (hp > 25) return { text: "Poor", col: "#ffaa00" };
+        if (hp > 10) return { text: "Very Poor", col: "#ff5500" };
+        if (hp > 0) return { text: "Extremely Poor", col: "#ff0000" };
+        return { text: "Dead", col: "#555555" };
+    }
+
+    function updateInvUI() {
+        document.getElementById('inv-money').innerText = `$${Math.floor(game.money)}`;
+        document.getElementById('inv-oxen').innerText = game.inv.oxen;
+        document.getElementById('inv-food').innerText = `${game.inv.food} lbs`;
+        document.getElementById('inv-clothes').innerText = game.inv.clothes;
+        document.getElementById('inv-ammo').innerText = game.inv.ammo;
+        document.getElementById('inv-parts').innerText = game.inv.parts;
+        let pt = document.getElementById('inv-party'); pt.innerHTML = '';
+        game.party.forEach(p => {
+            let hData = getHealthData(p.hp);
+            pt.innerHTML += `<tr><td>${p.name}</td><td style="color:${hData.col}">${hData.text}</td></tr>`;
+        });
+    }
+
+    function updateMapUI() {
+        let mn = document.getElementById('map-nodes'); mn.innerHTML = '';
+        LANDMARKS.forEach((lm, i) => {
+            let cls = game.distance >= lm.dist ? 'node-passed' : i === game.nextLandmarkIdx ? 'node-next' : '';
+            mn.innerHTML += `<div class="map-node ${cls}"><div class="map-dot"></div>${lm.name} <br><span style="font-size:16px">(${lm.dist}m)</span></div>`;
+        });
+    }
+
+    function logMsg(text, color = "var(--text)") {
+        let date = new Date(1848, 2, 1); date.setDate(date.getDate() + game.day);
+        let dateStr = date.toLocaleDateString('en-US', {month:'numeric', day:'numeric'});
+        let entry = document.createElement('div'); entry.className = 'log-entry';
+        entry.innerHTML = `<span class="log-date">[${dateStr}]</span> <span style="color:${color}">${text}</span>`;
+        let logDiv = document.getElementById('log'); logDiv.prepend(entry); logDiv.scrollTop = 0;
+    }
+
+    function animateWagon(dist) { game.groundPos += dist; document.getElementById('trail-ground').style.backgroundPositionX = `-${game.groundPos * 2}px`; }
+    function endGame(win, msg) { showModal(win ? "YOU WIN!" : "GAME OVER", msg, [{ text: "Main Menu", action: () => openScreen('screen-home') }]); }
+    function openScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active-screen')); document.getElementById(id).classList.add('active-screen'); }
+</script>
+
+</body>
+</html>
