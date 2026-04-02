@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>The Oregon Trail</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=VT323&display=swap" rel="stylesheet">
     <style>
@@ -17,7 +17,7 @@
         body {
             margin: 0; padding: 0; background-color: #111; color: var(--text);
             font-family: var(--font-retro); display: flex; justify-content: center;
-            align-items: center; min-height: 100vh; touch-action: manipulation; user-select: none;
+            align-items: center; min-height: 100vh; min-height: 100dvh; touch-action: manipulation; user-select: none;
             overflow: hidden; transition: background 0.3s;
         }
 
@@ -26,7 +26,7 @@
             content: ""; display: block; position: absolute; top: 0; left: 0; bottom: 0; right: 0;
             background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
                         linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-            z-index: 998; background-size: 100% 2px, 3px 100%; pointer-events: none;
+            z-index: 999; background-size: 100% 2px, 3px 100%; pointer-events: none;
         }
 
         /* ----- MODERN THEME OVERRIDES ----- */
@@ -43,45 +43,28 @@
         }
         body.modern-theme button:hover:not(:disabled) { background-color: #475569; transform: translateY(-1px); box-shadow: 0 6px 8px rgba(0,0,0,0.15); }
         body.modern-theme button:active:not(:disabled) { transform: translateY(2px); box-shadow: none; color: #38bdf8; }
+        body.modern-theme #zoom-toggle:hover { transform: translateY(-1px); }
+        body.modern-theme #zoom-toggle:active { transform: translateY(2px); }
         body.modern-theme h1, body.modern-theme h2 { text-shadow: none; font-weight: 700; color: #38bdf8; }
         body.modern-theme input[type="text"], body.modern-theme input[type="number"] { font-family: var(--font-modern); border-radius: 6px; background: #1e293b; border: 1px solid #475569; }
         body.modern-theme .status-bar { background: #1e293b; border-bottom: 1px solid #334155; font-size: 14px; }
         body.modern-theme #modal-content { border-radius: 12px; border: 1px solid #334155; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7); font-family: var(--font-modern); }
         body.modern-theme .tombstone-container { font-family: var(--font-modern); border-radius: 16px 16px 0 0; background: linear-gradient(to bottom, #94a3b8, #64748b); border: none; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5); }
-        
-        body.modern-theme #zoom-btn { background-color: #1e293b; border: 2px solid #38bdf8; border-radius: 12px; }
-        body.modern-theme #zoom-btn:hover { background-color: #38bdf8; }
-        body.modern-theme #zoom-btn:hover .mag-glass, body.modern-theme #zoom-btn:hover .mag-glass::after, body.modern-theme #zoom-btn:hover .mag-sign, body.modern-theme #zoom-btn:hover .mag-sign::after { border-color: #0f172a; background: #0f172a; }
+        body.modern-theme .zoom-icon { border-color: #38bdf8; }
+        body.modern-theme .zoom-icon::after { background: #38bdf8; }
         /* ---------------------------------- */
 
-        /* MAIN GAME CONTAINER (ZOOMED OUT BY DEFAULT) */
         #game-container {
-            width: 100%; max-width: 500px; height: 100vh; max-height: 850px;
+            width: 100%; max-width: 500px; height: 100vh; height: 100dvh; max-height: 850px;
             background-color: var(--bg); border: 4px solid var(--border);
             display: flex; flex-direction: column; position: relative;
-            transform: scale(0.75); /* Zoomed out 25% */
-            transform-origin: center center;
-            transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+            transition: transform 0.3s ease; transform-origin: center center;
         }
 
-        /* ZOOM BUTTON & CSS ART */
-        #zoom-btn {
-            position: fixed; bottom: 20px; right: 20px; width: 60px; height: 60px;
-            background-color: #000; border: 3px solid var(--border); border-radius: 50%;
-            cursor: pointer; z-index: 9999; display: flex; justify-content: center; align-items: center;
-            box-shadow: inset -3px -3px 0 #333, 0 10px 20px rgba(0,0,0,0.5);
-            transition: all 0.2s ease;
+        #game-container.zoomed-out {
+            transform: scale(0.75);
         }
-        #zoom-btn:hover { border-color: var(--accent); transform: scale(1.05); }
-        #zoom-btn:active { transform: scale(0.95); box-shadow: inset 3px 3px 0 #333; }
-        
-        /* CSS Magnifying Glass */
-        .mag-glass { position: relative; width: 22px; height: 22px; border: 3px solid #fff; border-radius: 50%; margin-top: -6px; margin-left: -6px; transition: all 0.2s ease; }
-        .mag-glass::after { content: ''; position: absolute; bottom: -10px; right: -10px; width: 12px; height: 4px; background: #fff; transform: rotate(45deg); transition: all 0.2s ease; }
-        .mag-sign { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 12px; height: 3px; background: #fff; transition: all 0.2s ease; }
-        .mag-sign.plus::after { content: ''; position: absolute; top: -4.5px; left: 4.5px; width: 3px; height: 12px; background: #fff; transition: all 0.2s ease; }
 
-        /* General Game Styles */
         header { text-align: center; font-size: 24px; padding: 10px; background: var(--border); color: #000; text-transform: uppercase; font-weight: bold; border-bottom: 2px solid #555; }
         .screen { display: none; flex-direction: column; height: 100%; overflow-y: hidden; }
         .active-screen { display: flex; }
@@ -98,6 +81,7 @@
         .btn-grid.single { grid-template-columns: 1fr; }
         .btn-grid.triple { grid-template-columns: 1fr 1fr 1fr; }
         
+        /* Smaller, better fitting buttons */
         button { font-family: var(--font-retro); font-size: 18px; padding: 8px; background-color: #000; color: var(--text); border: 2px solid var(--border); text-transform: uppercase; cursor: pointer; box-shadow: inset -2px -2px 0 #555, inset 2px 2px 0 #fff; transition: opacity 0.2s; }
         button:active:not(:disabled) { box-shadow: inset 2px 2px 0 #555; color: var(--accent); }
         button:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; color: #888; border-color: #555; }
@@ -150,6 +134,7 @@
         #hunt-player::after { content: ''; position: absolute; width: 4px; height: 20px; background: #333; top: -10px; left: 14px; border: 1px solid #000;}
         #hunt-ui { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.8); padding: 5px 10px; border: 2px solid var(--border); font-size: 18px; z-index: 10; color: #fff;}
         .animal { position: absolute; cursor: crosshair; z-index: 5; }
+        
         .animal.deer { width: 18px; height: 12px; background: #a0522d; border-radius: 4px; animation: erratic 0.45s infinite alternate; }
         .animal.bison { width: 35px; height: 22px; background: #3e1f06; border-radius: 8px 15px 0 0; }
         .animal.bear { width: 28px; height: 18px; background: #111; border-radius: 10px; animation: bound 0.3s infinite alternate ease-in-out;}
@@ -171,8 +156,14 @@
         
         .art-river { background: linear-gradient(to bottom, #87CEFA 30%, #4682B4 30%); }
         .art-river::before { content:''; position:absolute; bottom:0; left:0; width:100%; height: 50%; background: repeating-linear-gradient(180deg, #1e3c72, #2a5298 10px, #1e3c72 20px); box-shadow: inset 0 5px 10px rgba(0,0,0,0.4); }
+        
         .art-fort { background: linear-gradient(to bottom, #87CEEB 40%, #5c3a21 40%); }
-        .art-fort::before { content:''; position:absolute; bottom:10px; left:10%; width:80%; height:60px; background: repeating-linear-gradient(to right, #6b4226, #6b4226 10px, #4a2e1b 10px, #4a2e1b 12px); border: 4px solid #3e1f06; border-bottom: none; box-shadow: inset 0 15px 0 rgba(0,0,0,0.4); }
+        .art-fort::before { 
+            content:''; position:absolute; bottom:10px; left:10%; width:80%; height:60px; 
+            background: repeating-linear-gradient(to right, #6b4226, #6b4226 10px, #4a2e1b 10px, #4a2e1b 12px); 
+            border: 4px solid #3e1f06; border-bottom: none; box-shadow: inset 0 15px 0 rgba(0,0,0,0.4); 
+        }
+        
         .art-landmark { background: linear-gradient(to bottom, #ff7e5f 50%, #d4a373 50%); }
         .art-landmark::before { content:''; position:absolute; bottom:0; left:20%; width:60%; height:90px; background: linear-gradient(to right, #8c5a45, #a06e57); clip-path: polygon(30% 0%, 70% 0%, 100% 100%, 0% 100%); }
 
@@ -184,6 +175,7 @@
         .inv-table th { color: var(--accent); }
         .hidden { display: none !important; }
 
+        /* Tombstone Styling */
         .tombstone-container {
             width: 170px; height: 210px; background: #7a7a7a; border: 4px solid #444;
             border-top-left-radius: 85px; border-top-right-radius: 85px;
@@ -197,17 +189,41 @@
         .ts-date-game { font-size: 14px; margin-top: auto; font-weight: bold; }
         .ts-date-irl { font-size: 12px; color: #333; }
         .ts-input { width: 95%; background: #ccc !important; color: #000 !important; border: 2px solid #333 !important; font-size: 16px !important; }
+
+        /* Zoom Button Controls */
+        #zoom-toggle {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 9999;
+            background: rgba(0, 0, 0, 0.85);
+            color: var(--text);
+            padding: 10px 14px;
+            border: 2px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 18px;
+            box-shadow: inset -2px -2px 0 #555, inset 2px 2px 0 #fff;
+        }
+        .zoom-icon {
+            width: 12px; height: 12px;
+            border: 2px solid var(--accent);
+            border-radius: 50%;
+            position: relative;
+        }
+        .zoom-icon::after {
+            content: ''; position: absolute;
+            width: 2px; height: 7px;
+            background: var(--accent);
+            bottom: -6px; right: -5px;
+            transform: rotate(-45deg);
+        }
     </style>
 </head>
 <body>
 
-<div id="zoom-btn" onclick="toggleZoom()" title="Toggle Zoom">
-    <div class="mag-glass">
-        <div id="mag-sign" class="mag-sign plus"></div>
-    </div>
-</div>
-
-<div id="game-container">
+<div id="game-container" class="zoomed-out">
     <header>The Oregon Trail</header>
 
     <div id="screen-home" class="screen active-screen">
@@ -375,36 +391,37 @@
 
 </div>
 
+<button id="zoom-toggle" onclick="toggleZoom()">
+    <div class="zoom-icon"></div>
+    <span id="zoom-text"></span>
+</button>
+
 <script>
-    // --- ZOOM LOGIC ---
-    let isZoomedOut = true; // Starts zoomed out at 75%
-    
+    // --- ZOOM ENGINE ---
+    let isZoomedOut = true;
     function toggleZoom() {
-        const gameContainer = document.getElementById('game-container');
-        const magSign = document.getElementById('mag-sign');
-        
         isZoomedOut = !isZoomedOut;
-        
+        const container = document.getElementById('game-container');
         if (isZoomedOut) {
-            gameContainer.style.transform = 'scale(0.75)';
-            magSign.classList.add('plus'); // Shows the '+' to zoom in
+            container.classList.add('zoomed-out');
+            document.getElementById('zoom-text').innerText = "+";
         } else {
-            gameContainer.style.transform = 'scale(1)';
-            magSign.classList.remove('plus'); // Becomes a '-' to zoom out
+            container.classList.remove('zoomed-out');
+            document.getElementById('zoom-text').innerText = "-";
         }
     }
-    // ------------------
 
     // --- SETTINGS AND AUDIO ENGINE ---
     let appSettings = { sfx: true, music: true, visuals: false };
     let audioCtx, musicInterval, isMusicPlaying = false;
     let noteIdx = 0;
     
+    // An old-school sounding progression
     const melody = [
+        130.81, 196.00, 261.63, 196.00, // C3, G3, C4, G3
         130.81, 196.00, 261.63, 196.00, 
-        130.81, 196.00, 261.63, 196.00, 
-        146.83, 220.00, 293.66, 220.00, 
-        130.81, 174.61, 261.63, 174.61  
+        146.83, 220.00, 293.66, 220.00, // D3, A3, D4, A3
+        130.81, 174.61, 261.63, 174.61  // C3, F3, C4, F3
     ];
 
     function initAudio() {
@@ -415,11 +432,15 @@
         if (audioCtx.state === 'suspended') audioCtx.resume();
     }
 
+    // Attach click listener to whole document to handle SFX and strict audio resumption
     document.addEventListener('click', (e) => {
-        // Exclude the zoom button from triggering game sound effects if clicked
-        if (e.target.tagName === 'BUTTON' || e.target.closest('#zoom-btn')) {
+        // Only trigger audio context init if it's a button, to save performance
+        let isButton = false;
+        if(e.target.tagName === 'BUTTON' || e.target.closest('button')) isButton = true;
+        
+        if (isButton) {
             initAudio();
-            if (e.target.tagName === 'BUTTON' && appSettings.sfx) playBeep();
+            if (appSettings.sfx) playBeep();
             if (appSettings.music && !isMusicPlaying) startMusic();
         }
     });
@@ -431,8 +452,10 @@
         osc.type = 'square';
         osc.frequency.setValueAtTime(440, audioCtx.currentTime);
         osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.05);
+        
         gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+        
         osc.connect(gain); gain.connect(audioCtx.destination);
         osc.start(); osc.stop(audioCtx.currentTime + 0.1);
     }
@@ -444,17 +467,24 @@
             if (!appSettings.music) return clearInterval(musicInterval);
             let osc = audioCtx.createOscillator();
             let gain = audioCtx.createGain();
-            osc.type = 'triangle';
+            
+            osc.type = 'triangle'; // Retro Nintendo-style bass sound
             osc.frequency.value = melody[noteIdx % melody.length];
+            
+            // Pluck envelope
             gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
             gain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.15);
+            
             osc.connect(gain); gain.connect(audioCtx.destination);
             osc.start(); osc.stop(audioCtx.currentTime + 0.25);
             noteIdx++;
-        }, 250); 
+        }, 250); // 250ms per note
     }
 
-    function stopMusic() { isMusicPlaying = false; clearInterval(musicInterval); }
+    function stopMusic() {
+        isMusicPlaying = false;
+        clearInterval(musicInterval);
+    }
 
     function toggleSFX() {
         appSettings.sfx = !appSettings.sfx;
@@ -464,7 +494,8 @@
     function toggleMusic() {
         appSettings.music = !appSettings.music;
         document.getElementById('btn-toggle-music').innerText = appSettings.music ? "ON" : "OFF";
-        if (appSettings.music) { initAudio(); startMusic(); } else { stopMusic(); }
+        if (appSettings.music) { initAudio(); startMusic(); } 
+        else { stopMusic(); }
     }
 
     function toggleVisuals() {
@@ -522,7 +553,11 @@
         let btns = document.getElementById('modal-btns'); btns.innerHTML = '';
         m.buttons.forEach(b => {
             let btn = document.createElement('button'); btn.innerText = b.text;
-            btn.onclick = () => { b.action(); modalQueue.shift(); renderNextModal(); };
+            btn.onclick = () => { 
+                b.action(); 
+                modalQueue.shift(); 
+                renderNextModal();  
+            };
             btns.appendChild(btn);
         });
         document.getElementById('modal-overlay').classList.remove('hidden');
@@ -538,8 +573,12 @@
     }
 
     function confirmReset() {
-        showModal("Reset Progress", "Delete all gravestones and leaderboard data?", [
-            { text: "Yes", action: () => { localStorage.removeItem('ot_graves'); localStorage.removeItem('ot_leaderboard'); alert("Reset!"); }},
+        showModal("Reset Progress", "Delete all gravestones and leaderboard data? This cannot be undone.", [
+            { text: "Yes, Reset", action: () => {
+                localStorage.removeItem('ot_graves');
+                localStorage.removeItem('ot_leaderboard');
+                alert("Progress reset completely!");
+            }},
             { text: "Cancel", action: () => {} }
         ]);
     }
@@ -550,14 +589,22 @@
         window.currentSortedGraves = graves;
 
         let html = '';
-        if (graves.length === 0) { html = `<p style="text-align:center; padding: 20px;">The graveyard is empty.</p>`; } 
-        else {
-            html = `<table class="inv-table"><tr><th>Name</th><th>Date Passed</th><th>Distance</th><th>Action</th></tr>`;
+        if (graves.length === 0) {
+            html = `<p style="text-align:center; padding: 20px;">The graveyard is empty. No one has perished yet!</p>`;
+        } else {
+            html = `<table class="inv-table">
+                <tr><th>Name</th><th>Date Passed</th><th>Distance</th><th>Action</th></tr>`;
             graves.forEach((g, idx) => {
-                html += `<tr><td>${g.name}</td><td>${g.dateGame}</td><td>${g.dist}m</td><td><button style="font-size:14px; padding:4px 8px;" onclick="viewSingleGrave(${idx})">View</button></td></tr>`;
+                html += `<tr>
+                    <td>${g.name}</td>
+                    <td>${g.dateGame}</td>
+                    <td>${g.dist}m</td>
+                    <td><button style="font-size:14px; padding:4px 8px;" onclick="viewSingleGrave(${idx})">View</button></td>
+                </tr>`;
             });
             html += `</table>`;
         }
+
         document.getElementById('graves-content').innerHTML = html;
         openScreen('screen-graves');
     }
@@ -653,24 +700,28 @@
             if (!game.seenGraves.includes(g.id)) {
                 game.seenGraves.push(g.id);
                 let html = `
-                    <p style="font-size: 18px;">You pass a lonely gravestone...</p>
+                    <p style="font-size: 18px;">You pass a lonely gravestone on the side of the trail...</p>
                     <div class="tombstone-container">
                         <div class="ts-rip">R.I.P.</div>
                         <div class="ts-name">${g.name}</div>
                         <div class="ts-epitaph">"${g.epitaph}"</div>
                         <div class="ts-date-game">Passed: ${g.dateGame}</div>
+                        <div class="ts-date-irl">(IRL: ${g.dateIrl})</div>
                     </div>
                 `;
-                showModal("A Grave", html, [{text: "Pay Respects", action: () => { logMsg(`Paid respects at ${g.name}'s grave.`, "#aaaaaa"); }}]);
+                showModal("A Grave", html, [{text: "Pay Respects", action: () => {
+                    logMsg(`Paid respects at the grave of ${g.name}.`, "#aaaaaa");
+                }}]);
             }
         });
     }
 
     function promptRest() {
-        showModal("Rest", `Days to rest? (Max 6)<br><br><input type="number" id="rest-days" value="3" min="1" max="6" style="width:100px;">`, [
+        showModal("Rest", `How many days would you like to rest? (Max 6)<br><br><input type="number" id="rest-days" value="3" min="1" max="6" style="width:100px;">`, [
             { text: "Rest", action: () => {
                 let d = parseInt(document.getElementById('rest-days').value) || 1;
-                action('rest', Math.min(6, Math.max(1, d)));
+                if(d > 6) d = 6; if(d < 1) d = 1;
+                action('rest', d);
             }},
             { text: "Cancel", action: () => {} }
         ]);
@@ -683,24 +734,39 @@
             game.day++;
             let foodNeeded = alive.length * (game.rations === 0 ? 3 : game.rations === 1 ? 2 : 1);
             if (game.inv.food >= foodNeeded) game.inv.food -= foodNeeded;
-            else { game.inv.food = 0; logMsg("The party is starving!", "var(--danger)"); alive.forEach(p => p.hp -= 20); }
+            else { 
+                game.inv.food = 0; 
+                logMsg("The party is starving!", "var(--danger)"); 
+                alive.forEach(p => p.hp -= 20); 
+            }
 
             let baseDmg = (game.pace === 1 ? 2 : game.pace === 2 ? 5 : 0);
-            if (game.rations === 1) baseDmg += 2; if (game.rations === 2) baseDmg += 5; if (game.rations === 0 && game.inv.food > 0) baseDmg -= 1; 
-            if (game.weather === 0 || game.weather === 5) baseDmg += 2; if (game.inv.clothes < alive.length && game.weather >= 3) baseDmg += 5; 
+            if (game.rations === 1) baseDmg += 2; 
+            if (game.rations === 2) baseDmg += 5; 
+            if (game.rations === 0 && game.inv.food > 0) baseDmg -= 1; 
+
+            if (game.weather === 0 || game.weather === 5) baseDmg += 2; 
+            if (game.inv.clothes < alive.length && game.weather >= 3) baseDmg += 5; 
             
             game.party.forEach(p => { 
                 if(!p.dead) { 
-                    if(isResting) { p.hp = Math.min(100, p.hp + Math.floor(Math.random() * 8) + 2); } 
-                    else {
-                        p.hp -= baseDmg * p.weakness; 
+                    if(isResting) {
+                        let heal = Math.floor(Math.random() * 8) + 2;
+                        p.hp = Math.min(100, p.hp + heal);
+                    } else {
+                        let dmg = baseDmg * p.weakness;
+                        p.hp -= dmg; 
                         if(p.diseases.length > 0) p.hp -= (8 * p.weakness); 
                     }
-                    if(p.hp <= 0) { p.hp = 0; p.dead = true; newlyDead.push(p.name); logMsg(`${p.name} died.`, "var(--danger)"); } 
+                    if(p.hp <= 0) { 
+                        p.hp = 0; p.dead = true; 
+                        newlyDead.push(p.name);
+                        logMsg(`${p.name} has died.`, "var(--danger)"); 
+                    } 
                 }
             });
             
-            if(isResting && i===days-1) logMsg(`Rested ${days} days.`, "var(--success)");
+            if(isResting && i===days-1) logMsg(`Rested for ${days} days.`, "var(--success)");
             if(Math.random() < 0.25) game.weather = Math.floor(Math.random() * WEATHERS.length);
         }
 
@@ -717,10 +783,13 @@
                         <div class="ts-name">${name}</div>
                         <input type="text" id="grave-input" class="ts-input" maxlength="50" placeholder="Write epitaph...">
                         <div class="ts-date-game" style="margin-top:10px;">Passed: ${inGameDateStr}</div>
+                        <div class="ts-date-irl">(IRL: ${irlDateStr})</div>
                     </div>
                 `;
                 showModal("Tragic Loss", html, [{text: "Erect Tombstone", action: () => {
-                    let ep = document.getElementById('grave-input').value.trim() || "Rest in peace.";
+                    let ep = document.getElementById('grave-input').value.trim();
+                    if(!ep) ep = "Rest in peace.";
+                    
                     let graves = JSON.parse(localStorage.getItem('ot_graves') || '[]');
                     graves.push({ id: Date.now() + Math.random(), name: name, epitaph: ep, dist: game.distance, dateIrl: irlDateStr, dateGame: inGameDateStr });
                     localStorage.setItem('ot_graves', JSON.stringify(graves));
@@ -731,8 +800,7 @@
     }
 
     function openGameSettings() {
-        let html = `
-        <div style="text-align:left; background:rgba(0,0,0,0.5); padding:10px; border:2px solid var(--border); margin-bottom:10px; border-radius:4px;">
+        let html = `<div style="text-align:left; background:rgba(0,0,0,0.5); padding:10px; border:2px solid var(--border); margin-bottom:10px; border-radius:4px;">
             <h3 style="color:var(--gold); margin:0 0 5px 0;">Pace</h3>
             <label><input type="radio" name="set-pace" value="0" ${game.pace===0?'checked':''}> Steady</label><br>
             <label><input type="radio" name="set-pace" value="1" ${game.pace===1?'checked':''}> Strenuous</label><br>
@@ -743,6 +811,7 @@
             <label><input type="radio" name="set-rat" value="0" ${game.rations===0?'checked':''}> Filling</label><br>
             <label><input type="radio" name="set-rat" value="1" ${game.rations===1?'checked':''}> Meager</label><br>
             <label><input type="radio" name="set-rat" value="2" ${game.rations===2?'checked':''}> Bare Bones</label>
+            <p style="font-size:14px; color:var(--danger); margin-top:5px;">Warning: Less rations drops health faster!</p>
         </div>`;
         showModal("In-Game Settings", html, [{text: "Save", action: () => {
             game.pace = parseInt(document.querySelector('input[name="set-pace"]:checked').value);
@@ -757,22 +826,29 @@
         if (lm.type === 'finish') return calculateScore();
         
         if (lm.type === 'river') {
-            showModal(lm.name, "A wide river blocks your path.", [
+            showModal(lm.name, "A wide river blocks your path. How will you cross?", [
                 { text: "Ford River", action: () => riverOutcome(0.6) },
                 { text: "Caulk Wagon", action: () => riverOutcome(0.8) },
-                { text: "Ferry ($50)", action: () => { 
-                    if(game.money >= 50) { game.money-=50; logMsg("Paid ferry.", "var(--success)"); } 
-                    else { logMsg("Too poor for ferry."); riverOutcome(0.6); }
+                { text: "Hire Ferry ($50)", action: () => { 
+                    if(game.money >= 50) { game.money-=50; logMsg("Paid ferry. Safe crossing.", "var(--success)"); } 
+                    else { logMsg("Not enough money for ferry. Fording."); riverOutcome(0.6); }
                 }}
             ], lm.art);
         } else {
-            showModal(lm.name, "A well-known stop.", [{ text: "Rest", action: () => promptRest() }, { text: "Continue", action: () => {} }], lm.art);
+            showModal(lm.name, "A well-known stop on the trail.", [
+                { text: "Rest here", action: () => promptRest() },
+                { text: "Continue", action: () => {} }
+            ], lm.art);
         }
     }
 
     function riverOutcome(chance) {
-        if (Math.random() < chance) { logMsg(`Crossed the river.`, "var(--success)"); } 
-        else { let lost = Math.floor(Math.random() * 200) + 50; game.inv.food = Math.max(0, game.inv.food - lost); logMsg(`Wagon swamped! Lost ${lost} lbs food.`, "var(--danger)"); }
+        if (Math.random() < chance) { logMsg(`Successfully crossed the river.`, "var(--success)"); } 
+        else {
+            let lost = Math.floor(Math.random() * 200) + 50;
+            game.inv.food = Math.max(0, game.inv.food - lost);
+            logMsg(`Wagon swamped! Lost ${lost} lbs of food.`, "var(--danger)");
+        }
     }
 
     function triggerRandomEvent(alive) {
@@ -785,7 +861,7 @@
         let victim = alive[Math.floor(Math.random()*alive.length)];
 
         switch(r) {
-            case 0: let d = ["Dysentery", "Cholera", "Typhoid"][Math.floor(Math.random()*3)]; victim.diseases.push(d); victim.hp-=20; showModal("Disease", `${victim.name} caught ${d}.`, [{text:"OK", action:()=>logMsg(`${victim.name} is sick.`, "var(--danger)")}]); break;
+            case 0: let d = ["Dysentery", "Cholera", "Typhoid", "Measles"][Math.floor(Math.random()*4)]; victim.diseases.push(d); if (victim.hp > 40) victim.hp -= 20; else if (victim.hp > 15) victim.hp = 10; else victim.hp = 5; showModal("Disease", `${victim.name} contracted ${d}.`, [{text:"OK", action:()=>logMsg(`${victim.name} is sick.`, "var(--danger)")}]); break;
             case 1: let p = ["wheel", "axle", "tongue"][Math.floor(Math.random()*3)]; if(game.inv.parts>0){ game.inv.parts--; showModal("Breakdown", `Wagon ${p} broke. Used spare.`, [{text:"OK", action:()=>logMsg(`Repaired ${p}.`)}]); } else { game.day+=3; showModal("Breakdown", `Wagon ${p} broke. Lost 3 days.`, [{text:"OK", action:()=>logMsg(`Lost 3 days.`, "var(--danger)")}]); } break;
             case 2: let f = Math.floor(Math.random() * 80) + 20; game.inv.food += f; showModal("Discovery", `Found abandoned wagon. Scavenged ${f} lbs food!`, [{text:"Nice", action:()=>logMsg(`Found ${f} lbs food.`, "var(--success)")}]); break;
             case 3: showModal("Thief", "A thief tries to steal food!", [{text:"Shoot (100 Ammo)", action:()=> { if(game.inv.ammo >= 100){ game.inv.ammo -= 100; logMsg("Scared thief.", "var(--success)"); } else { game.inv.food = Math.max(0,game.inv.food-100); logMsg("Thief took 100 food.", "var(--danger)"); } }}, {text:"Let him take it", action:()=> {game.inv.food = Math.max(0,game.inv.food-100); logMsg("Lost 100 food.", "var(--danger)");}}]); break;
@@ -795,7 +871,46 @@
             case 7: showModal("Snakebite", `${victim.name} was bitten by a rattlesnake!`, [{text:"Suck Venom", action:()=> { victim.hp-=25; logMsg(`${victim.name} hurt by bite.`, "var(--danger)"); }}, {text:"Amputate (Rest 3 days)", action:()=> { game.day+=3; victim.hp-=10; logMsg(`${victim.name} amputated. Survived.`, "var(--gold)"); }}]); break;
             case 8: alive.forEach(x => x.hp-=20); showModal("Bad Water", "Water was tainted. Everyone is sick.", [{text:"Move On", action:()=>logMsg("Drank bad water.", "var(--danger)")}]); break;
             case 9: showModal("Wildfire", "Prairie fire approaching!", [{text:"Flee (Lose 2 Days)", action:()=> {game.day+=2; logMsg("Fled fire.", "var(--gold)");}}, {text:"Drop Food (150 lbs)", action:()=> {game.inv.food=Math.max(0,game.inv.food-150); logMsg("Dropped food.", "var(--danger)");}}]); break;
-            default: game.inv.food+=10; showModal("Peaceful Day", "Nothing much happened.", [{text:"Continue", action:()=>{}}]); break; 
+            case 10: game.day+=1; alive.forEach(x => x.hp-=5); showModal("Stampede", "Buffalo herd delays you 1 day.", [{text:"Wait", action:()=>logMsg("Delayed.", "var(--gold)")}]); break;
+            case 11: alive.forEach(x => x.hp-=10); showModal("Mosquitos", "Swarm of mosquitos plagues party.", [{text:"Swat", action:()=>logMsg("Bug bites.", "var(--gold)")}]); break;
+            case 12: game.inv.food+=50; alive.forEach(x => x.hp=Math.min(100,x.hp+10)); showModal("Wild Berries", "Found safe berries! HP restored.", [{text:"Eat", action:()=>logMsg("Ate berries.", "var(--success)")}]); break;
+            case 13: game.day+=1; showModal("Fog", "Thick fog forces stop for a day.", [{text:"Camp", action:()=>logMsg("Delayed by fog.", "var(--gold)")}]); break;
+            case 14: game.inv.parts = Math.max(0, game.inv.parts-1); showModal("Rough Trail", "Hit deep rut. Lost a wagon part.", [{text:"Ouch", action:()=>logMsg("Lost part.", "var(--danger)")}]); break;
+            case 15: showModal("Trapper", "Trapper offers 200 lbs food for $20.", [{text:"Buy", action:()=> {if(game.money>=20){game.money-=20; game.inv.food+=200; logMsg("Bought food.");} else logMsg("Too poor.");}}, {text:"Pass", action:()=>{}}]); break;
+            case 16: game.distance+=25; showModal("Shortcut", "Native guide shows faster route. +25 miles!", [{text:"Thanks", action:()=>logMsg("Shortcut taken.", "var(--success)")}]); break;
+            case 17: game.inv.clothes = Math.max(0, game.inv.clothes-2); showModal("Fire!", "Lantern tipped! Burned 2 clothes.", [{text:"Out", action:()=>logMsg("Fire.", "var(--danger)")}]); break;
+            case 18: alive.forEach(x => x.hp=Math.min(100,x.hp+15)); showModal("Good Spirits", "Sunset raises morale.", [{text:"Enjoy", action:()=>logMsg("Morale up.", "var(--success)")}]); break;
+            case 19: showModal("Toll Bridge", "Locals built bridge. Toll is $10.", [{text:"Pay", action:()=>{if(game.money>=10){game.money-=10;}else{game.day+=2;}}}, {text:"Around", action:()=>{game.day+=2;}}]); break;
+            case 20: game.inv.food+=30; victim.hp=Math.min(100,victim.hp+20); showModal("Wild Onions", `${victim.name} found wild onions!`, [{text:"Eat", action:()=>logMsg("Found onions.")}]); break;
+            case 21: game.day+=3; showModal("Flooded River", "Trail washed out. Wait 3 days.", [{text:"Wait", action:()=>logMsg("Waited out flood.")}]); break;
+            case 22: game.inv.oxen = Math.max(1, game.inv.oxen-1); showModal("Injured Ox", "An ox broke its leg and had to be put down.", [{text:"Sad", action:()=>logMsg("Lost an ox.", "var(--danger)")}]); break;
+            case 23: game.day+=2; showModal("Stuck in Mud", "Wagon sunk to the axles. Lost 2 days digging.", [{text:"Dig", action:()=>logMsg("Stuck in mud.")}]); break;
+            case 24: game.inv.food = Math.max(0, game.inv.food-80); showModal("Locusts!", "Locusts ate 80 lbs of your food.", [{text:"Shoo", action:()=>logMsg("Locusts ate food.", "var(--danger)")}]); break;
+            case 25: game.inv.oxen = Math.max(1, game.inv.oxen-1); alive.forEach(x=>x.hp-=10); showModal("Alkali Water", "Drank bad alkali water. Hurt party, ox died.", [{text:"Leave", action:()=>logMsg("Alkali poisoning.", "var(--danger)")}]); break;
+            case 26: game.day+=1; alive.forEach(x=>x.hp-=10); showModal("Dust Storm", "Choking dust storm. Lose 1 day.", [{text:"Cover", action:()=>logMsg("Dust storm.")}]); break;
+            case 27: game.inv.ammo+=40; game.inv.clothes++; showModal("Abandoned Cabin", "Found an old cabin with ammo and clothes.", [{text:"Loot", action:()=>logMsg("Found supplies.", "var(--success)")}]); break;
+            case 28: showModal("Native Trade", "Tribesmen offer 100 food for 1 set of clothes.", [{text:"Trade", action:()=>{if(game.inv.clothes>=1){game.inv.clothes--; game.inv.food+=100; logMsg("Traded.", "var(--success)");}else logMsg("No clothes.");}}, {text:"Decline", action:()=>{}}]); break;
+            case 29: alive.forEach(x=>x.hp=Math.min(100,x.hp+20)); showModal("Friendly Pioneer", "Met pioneer heading East. Morale +20.", [{text:"Listen", action:()=>logMsg("Good advice.")}]); break;
+            case 30: game.inv.food = Math.max(0, game.inv.food-50); game.inv.ammo = Math.max(0, game.inv.ammo-10); showModal("Bear Attack", "Bear raided camp! Lost 50 food and 10 bullets.", [{text:"Oh no", action:()=>logMsg("Bear attack.", "var(--danger)")}]); break;
+            case 31: victim.hp-=30; showModal("Broken Arm", `${victim.name} fell and broke an arm.`, [{text:"Set Bone", action:()=>logMsg(`${victim.name} broke arm.`, "var(--danger)")}]); break;
+            case 32: victim.hp-=25; showModal("Exhaustion", `${victim.name} is suffering from exhaustion.`, [{text:"Rest", action:()=>logMsg(`${victim.name} exhausted.`, "var(--danger)")}]); break;
+            case 33: if(game.weather<=1){ victim.hp-=30; showModal("Heatstroke", `${victim.name} got heatstroke.`, [{text:"Shade", action:()=>logMsg("Heatstroke.", "var(--danger)")}]); } break;
+            case 34: if(game.weather>=3){ victim.hp-=30; showModal("Frostbite", `${victim.name} got frostbite.`, [{text:"Warm Up", action:()=>logMsg("Frostbite.", "var(--danger)")}]); } break;
+            case 35: game.inv.clothes = Math.max(0, game.inv.clothes-1); showModal("Wear & Tear", "Rough travel ruined a set of clothing.", [{text:"Toss", action:()=>logMsg("Lost clothes.")}]); break;
+            case 36: game.day+=2; showModal("Wandering Oxen", "Oxen wandered off. Lost 2 days finding them.", [{text:"Search", action:()=>logMsg("Lost 2 days searching.")}]); break;
+            case 37: game.inv.ammo = Math.max(0, game.inv.ammo-5); victim.hp-=10; showModal("Gun Misfire", `Gun misfired, injuring ${victim.name}.`, [{text:"Careful", action:()=>logMsg("Gun misfire.", "var(--danger)")}]); break;
+            case 38: alive.forEach(x=>x.hp=Math.min(100,x.hp+30)); showModal("Fresh Spring", "Found clear spring water. Massively heals party.", [{text:"Drink", action:()=>logMsg("Drank spring water.", "var(--success)")}]); break;
+            case 39: showModal("Beautiful Waterfall", "The party admires a majestic waterfall.", [{text:"Admire", action:()=>logMsg("Admired nature.", "var(--success)")}]); break;
+            case 40: game.inv.food = Math.max(0, game.inv.food-60); game.inv.parts = Math.max(0, game.inv.parts-1); showModal("Wagon Tip", "Wagon tipped! Lost food and a spare part.", [{text:"Right it", action:()=>logMsg("Wagon tipped.", "var(--danger)")}]); break;
+            case 41: game.inv.parts = Math.max(0, game.inv.parts-1); showModal("Hail Damage", "Massive hail broke a wagon bow. Lost 1 spare part.", [{text:"Repair", action:()=>logMsg("Hail damage.")}]); break;
+            case 42: showModal("Famous Explorer", "Met John C. Frémont on the trail!", [{text:"Listen", action:()=>logMsg("Met explorer.")}]); break;
+            case 43: game.day+=2; showModal("Heavy Rain", "Torrential rain washes out the trail. Lost 2 days.", [{text:"Wait", action:()=>logMsg("Trail washed out.")}]); break;
+            case 44: game.money+=50; showModal("Gold!", "Spotted a gold nugget! +$50.", [{text:"Pocket it", action:()=>logMsg("Found gold!", "var(--success)")}]); break;
+            case 45: showModal("Stranded Traveler", "Traveler needs 1 spare part.", [{text:"Give Part", action:()=>{ if(game.inv.parts>0){ game.inv.parts--; game.money+=40; logMsg("Gave part for $40.");} else { logMsg("No parts to give."); }}}, {text:"Ignore", action:()=>logMsg("Ignored traveler.")}]); break;
+            case 46: showModal("Spoiled Food", "50 lbs of meat might be spoiled.", [{text:"Eat It", action:()=> { if(Math.random()<0.5) alive.forEach(x=>x.hp-=15); logMsg("Food made people sick.", "var(--danger)"); }}, {text:"Toss It", action:()=> { game.inv.food = Math.max(0, game.inv.food-50); logMsg("Tossed 50 lbs food."); }}]); break;
+            case 47: showModal("Desperate Trader", "Offers 1 yoke of oxen for $100.", [{text:"Buy ($100)", action:()=>{ if(game.money>=100){ game.money-=100; game.inv.oxen++; logMsg("Bought Ox.");} else { logMsg("Can't afford ox."); }}}, {text:"Decline", action:()=>{}}]); break;
+            case 48: showModal("River Rescue", `${victim.name} fell in river! Drop 20 bullets to pull them up faster?`, [{text:"Drop Ammo", action:()=>{ game.inv.ammo = Math.max(0, game.inv.ammo-20); logMsg("Saved them, lost ammo."); }}, {text:"Save Bullets", action:()=>{ victim.hp-=25; logMsg(`${victim.name} nearly drowned.`, "var(--danger)"); }}]); break;
+            case 49: showModal("Mysterious Berries", "Found strange berries. Eat?", [{text:"Risk it", action:()=>{ if(Math.random()<0.4) { game.inv.food+=40; logMsg("Berries were safe."); } else { victim.hp-=20; logMsg("Poison berries!", "var(--danger)"); }}}, {text:"Leave them", action:()=>{}}]); break;
         }
     }
 
@@ -803,10 +918,12 @@
     
     function startHunt() {
         if (game.inv.ammo <= 0) return showModal("No Ammo", "You don't have bullets.", [{text:"Back", action:()=>{}}]);
-        game.canHuntRest = false; openScreen('screen-hunt');
+        game.canHuntRest = false; 
+        openScreen('screen-hunt');
         huntTime = 10; huntMeat = 0;
         document.getElementById('hunt-area').innerHTML = '<div class="hunt-ground"></div><div id="hunt-player"></div>';
         updateHuntUI();
+        
         huntInterval = setInterval(() => {
             huntTime--; updateHuntUI();
             if(Math.random() < 0.85) spawnAnimal();
@@ -825,34 +942,53 @@
         
         animal.style.top = type === 'eagle' ? Math.floor(Math.random()*40)+'px' : Math.floor(Math.random() * 60) + 10 + 'px';
         animal.style.left = startLeft ? '-60px' : '100%';
-        animal.style.transition = `left ${type === 'eagle' ? '1.2s' : (type === 'bear' ? '1.5s' : '2.5s')} linear`;
+        
+        let speed = type === 'eagle' ? '1.2s' : (type === 'bear' ? '1.5s' : (type === 'deer' ? '2.25s' : '3s'));
+        animal.style.transition = `left ${speed} linear`;
         
         animal.onclick = (e) => {
             e.stopPropagation();
             if(game.inv.ammo > 0) {
-                game.inv.ammo--; huntMeat += type === 'bear' ? 80 : (type === 'bison' ? 50 : 25);
+                game.inv.ammo--;
+                let yield = type === 'bear' ? 80 : (type === 'bison' ? 50 : (type === 'eagle' ? 15 : 25));
+                huntMeat += yield;
                 showFlash(e.clientX, e.clientY);
                 animal.remove(); updateHuntUI();
             } else { endHunt(); }
         };
+        
         document.getElementById('hunt-area').appendChild(animal);
         setTimeout(() => animal.style.left = startLeft ? '100%' : '-60px', 50);
         setTimeout(() => { if(animal.parentElement) animal.remove(); }, 3500);
     }
 
-    function shootHunt(e) { if(huntTime > 0 && game.inv.ammo > 0) { game.inv.ammo--; showFlash(e.clientX, e.clientY); updateHuntUI(); } if(game.inv.ammo <= 0) endHunt(); }
+    function shootHunt(e) {
+        if(huntTime > 0 && game.inv.ammo > 0) { game.inv.ammo--; showFlash(e.clientX, e.clientY); updateHuntUI(); }
+        if(game.inv.ammo <= 0) endHunt();
+    }
+
     function showFlash(x, y) {
-        let f = document.createElement('div'); f.className = 'bullet-flash'; f.style.left = (x - 7) + 'px'; f.style.top = (y - 7) + 'px';
-        document.getElementById('screen-hunt').appendChild(f); setTimeout(()=>f.remove(), 200);
+        let f = document.createElement('div'); f.className = 'bullet-flash';
+        f.style.left = (x - 7) + 'px'; f.style.top = (y - 7) + 'px';
+        document.getElementById('screen-hunt').appendChild(f);
+        setTimeout(()=>f.remove(), 200);
         let sf = document.createElement('div'); sf.className = 'screen-flash';
-        document.getElementById('screen-hunt').appendChild(sf); setTimeout(()=>sf.remove(), 100);
+        document.getElementById('screen-hunt').appendChild(sf);
+        setTimeout(()=>sf.remove(), 100);
     }
 
     function updateHuntUI() {
-        document.getElementById('hunt-time').innerText = huntTime; document.getElementById('hunt-ammo').innerText = game.inv.ammo; document.getElementById('hunt-meat').innerText = huntMeat;
+        document.getElementById('hunt-time').innerText = huntTime;
+        document.getElementById('hunt-ammo').innerText = game.inv.ammo;
+        document.getElementById('hunt-meat').innerText = huntMeat;
     }
 
-    function endHunt() { clearInterval(huntInterval); huntTime = 0; game.inv.food += huntMeat; game.day++; logMsg(`Gathered ${huntMeat} lbs food.`, "var(--success)"); openScreen('screen-trail'); updateTrailUI(); }
+    function endHunt() {
+        clearInterval(huntInterval); huntTime = 0;
+        game.inv.food += huntMeat; game.day++; 
+        logMsg(`Hunting ended. Gathered ${huntMeat} lbs of food.`, "var(--success)");
+        openScreen('screen-trail'); updateTrailUI();
+    }
 
     function calculateScore() {
         let alive = game.party.filter(p => p.hp > 0);
@@ -860,22 +996,43 @@
         let score = Math.floor((alive.length * 500) + game.money + (game.inv.food / 10) + (game.inv.oxen * 50) + (game.inv.parts * 20) + hpBonus);
         
         let dateArrived = new Date(1848, 2, 1); dateArrived.setDate(dateArrived.getDate() + game.day);
-        let record = { score: score, dateArrived: dateArrived.toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}), membersLeft: alive.length };
+        let record = {
+            score: score,
+            dateIrl: new Date().toLocaleDateString('en-US'),
+            dateArrived: dateArrived.toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}),
+            membersLeft: alive.length
+        };
 
         let lb = JSON.parse(localStorage.getItem('ot_leaderboard') || '[]');
         lb.push(record); lb.sort((a, b) => b.score - a.score); lb = lb.slice(0, 10);
         localStorage.setItem('ot_leaderboard', JSON.stringify(lb));
 
-        showModal("YOU WIN!", `Survivors: ${alive.length}<br>Score: ${score}`, [{ text: "Leaderboard", action: () => showLeaderboard() }]);
+        let msg = `You made it safely to Oregon!<br><br>
+            <div style="text-align:left; font-size:18px;">
+            Survivors: ${alive.length} x 500<br>
+            Cash: $${Math.floor(game.money)}<br>
+            Food/Supplies Bonus: ${Math.floor(game.inv.food/10) + (game.inv.oxen*50) + (game.inv.parts*20)}<br>
+            Party Health Bonus: ${Math.floor(hpBonus)}<br>
+            <h3 style="color:var(--gold);text-align:center;">FINAL SCORE: ${score}</h3>
+            </div>`;
+        showModal("YOU WIN!", msg, [{ text: "Leaderboard", action: () => showLeaderboard() }, { text: "Main Menu", action: () => openScreen('screen-home') }]);
     }
 
     function showLeaderboard() {
         let lb = JSON.parse(localStorage.getItem('ot_leaderboard') || '[]');
-        let html = `<table class="inv-table"><tr><th>Rank</th><th>Score</th><th>Arrived</th><th>Party</th></tr>`;
-        if (lb.length === 0) { html += `<tr><td colspan="4" style="text-align:center;">No scores yet.</td></tr>`; } 
-        else { lb.forEach((r, idx) => { html += `<tr><td>#${idx + 1}</td><td>${r.score}</td><td>${r.dateArrived}</td><td>${r.membersLeft}/5</td></tr>`; }); }
+        let html = `<table class="inv-table">
+            <tr><th>Rank</th><th>Score</th><th>Arrived</th><th>Party</th></tr>`;
+        if (lb.length === 0) {
+            html += `<tr><td colspan="4" style="text-align:center; padding: 20px;">No scores yet.</td></tr>`;
+        } else {
+            lb.forEach((r, idx) => {
+                let color = idx === 0 ? "var(--gold)" : (idx === 1 ? "silver" : (idx === 2 ? "#cd7f32" : "var(--text)"));
+                html += `<tr style="color:${color}"><td>#${idx + 1}</td><td>${r.score}</td><td>${r.dateArrived}</td><td>${r.membersLeft}/5</td></tr>`;
+            });
+        }
         html += `</table>`;
-        document.getElementById('lb-content').innerHTML = html; openScreen('screen-leaderboard');
+        document.getElementById('lb-content').innerHTML = html;
+        openScreen('screen-leaderboard');
     }
 
     function updateTrailUI() {
@@ -891,26 +1048,44 @@
         document.getElementById('btn-rest').disabled = !game.canHuntRest;
     }
 
+    function getHealthData(hp) {
+        if (hp > 85) return { text: "Extremely Good", col: "#00ff00" };
+        if (hp > 70) return { text: "Very Good", col: "#55ff55" };
+        if (hp > 55) return { text: "Good", col: "#aaffaa" };
+        if (hp > 40) return { text: "Fair", col: "#ffff55" };
+        if (hp > 25) return { text: "Poor", col: "#ffaa00" };
+        if (hp > 10) return { text: "Very Poor", col: "#ff5500" };
+        if (hp > 0) return { text: "Extremely Poor", col: "#ff0000" };
+        return { text: "Dead", col: "#555555" };
+    }
+
     function updateInvUI() {
-        document.getElementById('inv-money').innerText = `$${Math.floor(game.money)}`; document.getElementById('inv-oxen').innerText = game.inv.oxen;
-        document.getElementById('inv-food').innerText = `${game.inv.food} lbs`; document.getElementById('inv-clothes').innerText = game.inv.clothes;
-        document.getElementById('inv-ammo').innerText = game.inv.ammo; document.getElementById('inv-parts').innerText = game.inv.parts;
+        document.getElementById('inv-money').innerText = `$${Math.floor(game.money)}`;
+        document.getElementById('inv-oxen').innerText = game.inv.oxen;
+        document.getElementById('inv-food').innerText = `${game.inv.food} lbs`;
+        document.getElementById('inv-clothes').innerText = game.inv.clothes;
+        document.getElementById('inv-ammo').innerText = game.inv.ammo;
+        document.getElementById('inv-parts').innerText = game.inv.parts;
         let pt = document.getElementById('inv-party'); pt.innerHTML = '';
-        game.party.forEach(p => { pt.innerHTML += `<tr><td>${p.name}</td><td>${p.hp > 70 ? 'Good' : p.hp > 30 ? 'Fair' : p.hp > 0 ? 'Poor' : 'Dead'}</td></tr>`; });
+        game.party.forEach(p => {
+            let hData = getHealthData(p.hp);
+            pt.innerHTML += `<tr><td>${p.name}</td><td style="color:${hData.col}">${hData.text}</td></tr>`;
+        });
     }
 
     function updateMapUI() {
         let mn = document.getElementById('map-nodes'); mn.innerHTML = '';
         LANDMARKS.forEach((lm, i) => {
             let cls = game.distance >= lm.dist ? 'node-passed' : i === game.nextLandmarkIdx ? 'node-next' : '';
-            mn.innerHTML += `<div class="map-node ${cls}"><div class="map-dot"></div>${lm.name} (${lm.dist}m)</div>`;
+            mn.innerHTML += `<div class="map-node ${cls}"><div class="map-dot"></div>${lm.name} <br><span style="font-size:16px">(${lm.dist}m)</span></div>`;
         });
     }
 
     function logMsg(text, color = "var(--text)") {
         let date = new Date(1848, 2, 1); date.setDate(date.getDate() + game.day);
+        let dateStr = date.toLocaleDateString('en-US', {month:'numeric', day:'numeric'});
         let entry = document.createElement('div'); entry.className = 'log-entry';
-        entry.innerHTML = `<span class="log-date">[${date.toLocaleDateString('en-US', {month:'numeric', day:'numeric'})}]</span> <span style="color:${color}">${text}</span>`;
+        entry.innerHTML = `<span class="log-date">[${dateStr}]</span> <span style="color:${color}">${text}</span>`;
         let logDiv = document.getElementById('log'); logDiv.prepend(entry); logDiv.scrollTop = 0;
     }
 
