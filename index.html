@@ -43,8 +43,8 @@
         }
         body.modern-theme button:hover:not(:disabled) { background-color: #475569; transform: translateY(-1px); box-shadow: 0 6px 8px rgba(0,0,0,0.15); }
         body.modern-theme button:active:not(:disabled) { transform: translateY(2px); box-shadow: none; color: #38bdf8; }
-        body.modern-theme #zoom-toggle:hover { transform: translateY(-1px); }
-        body.modern-theme #zoom-toggle:active { transform: translateY(2px); }
+        body.modern-theme #zoom-toggle:hover { transform: translateY(-1px); opacity: 1; }
+        body.modern-theme #zoom-toggle:active { transform: translateY(2px); opacity: 1; }
         body.modern-theme h1, body.modern-theme h2 { text-shadow: none; font-weight: 700; color: #38bdf8; }
         body.modern-theme input[type="text"], body.modern-theme input[type="number"] { font-family: var(--font-modern); border-radius: 6px; background: #1e293b; border: 1px solid #475569; }
         body.modern-theme .status-bar { background: #1e293b; border-bottom: 1px solid #334155; font-size: 14px; }
@@ -205,6 +205,11 @@
             gap: 8px;
             font-size: 18px;
             box-shadow: inset -2px -2px 0 #555, inset 2px 2px 0 #fff;
+            opacity: 0.5;
+            transition: opacity 0.3s ease, transform 0.2s ease;
+        }
+        #zoom-toggle:hover, #zoom-toggle:active {
+            opacity: 1;
         }
         .zoom-icon {
             width: 12px; height: 12px;
@@ -228,7 +233,7 @@
 
     <div id="screen-home" class="screen active-screen">
         <h1>Oregon Trail</h1>
-        <h3 style="text-align:center; color:var(--border); margin-top:-10px;">v1.1</h3>
+        <h3 style="text-align:center; color:var(--border); margin-top:-10px;">v1.2</h3>
         <div class="panel" style="display:flex; flex-direction:column; justify-content:center; gap:5px;">
             <button class="menu-btn" onclick="openScreen('screen-names'); resetGameData();">Start Journey</button>
             <button class="menu-btn" onclick="showLeaderboard()">Leaderboard</button>
@@ -393,7 +398,7 @@
 
 <button id="zoom-toggle" onclick="toggleZoom()">
     <div class="zoom-icon"></div>
-    <span id="zoom-text"></span>
+    <span id="zoom-text">ZOOM IN</span>
 </button>
 
 <script>
@@ -404,10 +409,10 @@
         const container = document.getElementById('game-container');
         if (isZoomedOut) {
             container.classList.add('zoomed-out');
-            document.getElementById('zoom-text').innerText = "+";
+            document.getElementById('zoom-text').innerText = "ZOOM IN";
         } else {
             container.classList.remove('zoomed-out');
-            document.getElementById('zoom-text').innerText = "-";
+            document.getElementById('zoom-text').innerText = "ZOOM OUT";
         }
     }
 
@@ -416,12 +421,12 @@
     let audioCtx, musicInterval, isMusicPlaying = false;
     let noteIdx = 0;
     
-    // An old-school sounding progression
+    // A continuous, driving arpeggiated bassline loop
     const melody = [
-        130.81, 196.00, 261.63, 196.00, // C3, G3, C4, G3
-        130.81, 196.00, 261.63, 196.00, 
-        146.83, 220.00, 293.66, 220.00, // D3, A3, D4, A3
-        130.81, 174.61, 261.63, 174.61  // C3, F3, C4, F3
+        130.81, 130.81, 196.00, 130.81, // C3, C3, G3, C3
+        174.61, 174.61, 261.63, 174.61, // F3, F3, C4, F3
+        196.00, 196.00, 293.66, 196.00, // G3, G3, D4, G3
+        130.81, 130.81, 196.00, 130.81
     ];
 
     function initAudio() {
@@ -432,9 +437,7 @@
         if (audioCtx.state === 'suspended') audioCtx.resume();
     }
 
-    // Attach click listener to whole document to handle SFX and strict audio resumption
     document.addEventListener('click', (e) => {
-        // Only trigger audio context init if it's a button, to save performance
         let isButton = false;
         if(e.target.tagName === 'BUTTON' || e.target.closest('button')) isButton = true;
         
@@ -468,17 +471,20 @@
             let osc = audioCtx.createOscillator();
             let gain = audioCtx.createGain();
             
-            osc.type = 'triangle'; // Retro Nintendo-style bass sound
+            osc.type = 'square';
             osc.frequency.value = melody[noteIdx % melody.length];
             
-            // Pluck envelope
-            gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
-            gain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.15);
+            // Smooth ADSR envelope to completely remove clicks/spikes
+            gain.gain.setValueAtTime(0, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(0.04, audioCtx.currentTime + 0.02); 
+            gain.gain.linearRampToValueAtTime(0.03, audioCtx.currentTime + 0.2);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.24);
             
             osc.connect(gain); gain.connect(audioCtx.destination);
-            osc.start(); osc.stop(audioCtx.currentTime + 0.25);
+            osc.start(audioCtx.currentTime); 
+            osc.stop(audioCtx.currentTime + 0.25);
             noteIdx++;
-        }, 250); // 250ms per note
+        }, 250); 
     }
 
     function stopMusic() {
@@ -674,20 +680,20 @@
             if (nextMark && game.distance + actualDist >= nextMark.dist) {
                 actualDist = nextMark.dist - game.distance;
                 game.distance += actualDist;
-                advanceTime(1, alive);
+                advanceTime(1);
                 checkGraves(oldDist, game.distance);
                 return handleLandmark(nextMark);
             } else {
                 game.distance += actualDist;
                 logMsg(`Traveled ${actualDist} miles.`);
                 checkGraves(oldDist, game.distance);
-                if (Math.random() < 0.45) { advanceTime(1, alive); return triggerRandomEvent(alive); }
+                if (Math.random() < 0.45) { advanceTime(1); return triggerRandomEvent(); }
             }
             animateWagon(actualDist);
-            advanceTime(1, alive);
+            advanceTime(1);
         } else if (type === 'rest') {
             game.canHuntRest = false; 
-            advanceTime(daysToRest, alive, true);
+            advanceTime(daysToRest, true);
         }
         updateTrailUI();
     }
@@ -727,11 +733,17 @@
         ]);
     }
 
-    function advanceTime(days, alive, isResting = false) {
+    function advanceTime(days, isResting = false) {
         let newlyDead = [];
 
         for(let i=0; i<days; i++) {
             game.day++;
+            
+            // Re-fetch the alive array perfectly every single loop iteration 
+            // so dead party members don't keep draining food or getting hurt.
+            let alive = game.party.filter(p => !p.dead); 
+            if (alive.length === 0) break;
+
             let foodNeeded = alive.length * (game.rations === 0 ? 3 : game.rations === 1 ? 2 : 1);
             if (game.inv.food >= foodNeeded) game.inv.food -= foodNeeded;
             else { 
@@ -851,7 +863,11 @@
         }
     }
 
-    function triggerRandomEvent(alive) {
+    function triggerRandomEvent() {
+        // Fetch only those who are actively alive to protect dead players from being picked
+        let alive = game.party.filter(p => !p.dead);
+        if (alive.length === 0) return;
+
         let totalWeight = game.eventWeights.reduce((a, b) => a + b, 0);
         let rand = Math.random() * totalWeight;
         let r = 0, sum = 0;
